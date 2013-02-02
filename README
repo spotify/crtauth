@@ -1,0 +1,27 @@
+crtauth - a public key backed client/server authentication system
+
+
+crtauth is a system for authenticating a user to a centralized server. The
+initial use case is to create a convenient authentication for command line
+tools that interacts with a central server without resorting to authentication
+using a shared secret, such as a password.
+
+crtauth leverages the public key cryptography mechanisms that is commonly
+used by ssh(1) to authenticate users to remote systems. The goal of the
+system is to make the user experience as seamless as possible using the
+ssh-agent program to manage access to encrypted private keys without asking
+for a password each time the command is run
+
+The name of the project is derived from the key concepts challenge, response,
+token and authentication, while at the same time reminding us old timers of
+the soon to be forgotten cathode ray tube screen technology.
+
+License
+-------
+
+crtauth is free software, this code is released under the Apache
+Software License, version 2. The original code is written by Noa Resare with
+contributions from John-John Tedro, Erwan Lemmonier, Martin Parm and Gunnar
+Kreitz
+
+All code is Copyright (c) 2011-2013 Spotify AB
