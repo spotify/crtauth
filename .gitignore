@@ -1,0 +1,4 @@
+.idea
+build
+crtauth.egg-info
+*.pyc
