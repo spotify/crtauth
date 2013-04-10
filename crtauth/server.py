@@ -79,11 +79,13 @@ class AuthServer(object):
 
         payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
 
-        payload = payload.serialize()
-
-        return ssh.base64url_encode(payload)
+        return ssh.base64url_encode(payload.serialize())
 
     def create_token(self, response):
+        """
+        This method verifies that the response given from the client
+        is valid and if so returns a token used for authentication.
+        """
         try:
             s = ssh.base64url_decode(response)
         except ValueError:
