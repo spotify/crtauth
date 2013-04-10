@@ -1,0 +1,15 @@
+Source: crtauth
+Priority: extra
+Maintainer: Noa Resare <noa@spotify.com>
+Standards-Version: 3.9.3
+Section: python
+Build-depends: debhelper (>= 8), python
+
+Package: crtauth
+Architecture: all
+Depends: python, ${python:Depends}, ${misc:Depends}
+Description: Public key backed client/server authentication system
+ crtauth is a system for authenticating a user to a centralized server. The
+ initial use case is to create a convenient authentication for command line
+ tools that interacts with a central server without resorting to
+ authentication using a shared secret, such as a password.
