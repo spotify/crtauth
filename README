@@ -12,9 +12,17 @@ system is to make the user experience as seamless as possible using the
 ssh-agent program to manage access to encrypted private keys without asking
 for a password each time the command is run
 
-The name of the project is derived from the key concepts challenge, response,
-token and authentication, while at the same time reminding us old timers of
-the soon to be forgotten cathode ray tube screen technology.
+The name of the project is derived from the central concepts challenge,
+response, token and authentication, while at the same time reminding us old
+timers of the soon to be forgotten cathode ray tube screen technology.
+
+Example use case
+----------------
+
+Command line tools that connect to a central server to perform some action or
+fetch some information can be a very useful thing. Let's say you have a service
+that exposes information about servers using an http based API.
+
 
 License
 -------
