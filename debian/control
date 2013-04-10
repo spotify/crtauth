@@ -4,6 +4,7 @@ Maintainer: Noa Resare <noa@spotify.com>
 Standards-Version: 3.9.3
 Section: python
 Build-depends: debhelper (>= 8), python
+X-Python-Version: >= 2.6
 
 Package: crtauth
 Architecture: all
