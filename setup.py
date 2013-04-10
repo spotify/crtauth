@@ -27,6 +27,6 @@ setup(
     description="A public key backed client/server authentication system",
     author='Noa Resare',
     author_email='noa@spotify.com',
-    license='ASL',
+    license='Apache-2.0',
     packages=['crtauth']
 )
