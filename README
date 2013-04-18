@@ -1,5 +1,7 @@
 crtauth - a public key backed client/server authentication system
 
+The latest version of this software can be fetched from
+https://github.com/spotify/crtauth
 
 crtauth is a system for authenticating a user to a centralized server. The
 initial use case is to create a convenient authentication for command line
