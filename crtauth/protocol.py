@@ -19,25 +19,51 @@
 
 from crtauth.exceptions import InvalidInputException
 
-field_fstring = (
-    lambda P, p, v, (size,): p.pack_fstring(size, v),
-    lambda P, u, (size,): u.unpack_fstring(size)
-    )
 
-field_string = (
-    lambda P, p, v, _: p.pack_string(v),
-    lambda P, u, _: u.unpack_string()
-    )
+class Field(object):
+    def pack(self, packing, packer, value):
+        raise NotImplementedError("pack")
 
-field_uint = (
-    lambda P, p, v, _: p.pack_uint(v),
-    lambda P, u, _: u.unpack_uint()
-    )
+    def unpack(self, packing, unpacker):
+        raise NotImplementedError("unpack")
 
-field_type = (
-    lambda P, p, v, _: p.pack_string(v.serialize(P)),
-    lambda P, u, (cls,): cls.deserialize(P, u.unpack_string())
-    )
+
+class FString(Field):
+    def __init__(self, size):
+        self.size = size
+
+    def pack(self, packing, packer, value):
+        return packer.pack_fstring(self.size, value)
+
+    def unpack(self, packing, unpacker):
+        return unpacker.unpack_fstring(self.size)
+
+
+class String(Field):
+    def pack(self, packing, packer, value):
+        return packer.pack_string(value)
+
+    def unpack(self, packing, unpacker):
+        return unpacker.unpack_string()
+
+
+class UInt(Field):
+    def pack(self, packing, packer, value):
+        return packer.pack_uint(value)
+
+    def unpack(self, packing, unpacker):
+        return unpacker.unpack_uint()
+
+
+class Type(Field):
+    def __init__(self, cls):
+        self.cls = cls
+
+    def pack(self, packing, packer, value):
+        return packer.pack_string(value.serialize(packing))
+
+    def unpack(self, packing, unpacker):
+        return self.cls.deserialize(packing, unpacker.unpack_string())
 
 
 class SerializablePacket(object):
@@ -63,8 +89,9 @@ class SerializablePacket(object):
 
         p.pack_fstring(1, self.__magic__)
 
-        for name, ((sx, _), opts) in self.__fields__:
-            sx(packing, p, getattr(self, name), opts)
+        for name, field in self.__fields__:
+            value = getattr(self, name)
+            field.pack(packing, p, value)
 
         return p.get_buffer()
 
@@ -82,8 +109,8 @@ class SerializablePacket(object):
 
         kw = dict()
 
-        for name, ((_, dx), opts) in cls.__fields__:
-            kw[name] = dx(packing, u, opts)
+        for name, field in cls.__fields__:
+            kw[name] = field.unpack(packing, u)
 
         return cls(**kw)
 
@@ -98,8 +125,8 @@ class VerifiablePayload(SerializablePacket):
     __magic__ = 'v'
 
     __fields__ = [
-        ("digest", (field_fstring, (20,))),
-        ("payload", (field_string, None))
+        ("digest", FString(20)),
+        ("payload", String()),
     ]
 
     def verify(self, digest_f):
@@ -113,12 +140,12 @@ class Challenge(SerializablePacket):
     __magic__ = 'c'
 
     __fields__ = [
-        ("unique_data", (field_fstring, (20,))),
-        ("valid_from", (field_uint, None)),
-        ("valid_to", (field_uint, None)),
-        ("fingerprint", (field_string, None)),
-        ("server_name", (field_string, None)),
-        ("username", (field_string, None))
+        ("unique_data", FString(20)),
+        ("valid_from", UInt()),
+        ("valid_to", UInt()),
+        ("fingerprint", String()),
+        ("server_name", String()),
+        ("username", String()),
     ]
 
 class Response(SerializablePacket):
@@ -131,8 +158,8 @@ class Response(SerializablePacket):
     __magic__ = 'r'
 
     __fields__ = [
-        ("signature", (field_string, None)),
-        ("hmac_challenge", (field_type, (VerifiablePayload,)))
+        ("signature", String()),
+        ("hmac_challenge", Type(VerifiablePayload))
     ]
 
 class Token(SerializablePacket):
@@ -142,8 +169,8 @@ class Token(SerializablePacket):
     __magic__ = 't'
 
     __fields__ = (
-        ("valid_from", (field_uint, None)),
-        ("valid_to", (field_uint, None)),
-        ("username", (field_string, None))
+        ("valid_from", UInt()),
+        ("valid_to", UInt()),
+        ("username", String()),
         )
 
