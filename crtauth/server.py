@@ -25,6 +25,7 @@ import time
 from crtauth import ssh
 from crtauth import exceptions
 from crtauth import protocol
+from crtauth import xdr_packing
 
 # The maximum number of seconds from a challenge is created to the time when
 # the generated response is processed. This needs to compensate for clock
@@ -38,7 +39,7 @@ CLOCK_FUDGE = 2
 
 class AuthServer(object):
     def __init__(self, secret, key_provider, server_name, token_lifetime=60,
-                 now_func=time.time):
+                 now_func=time.time, packing=xdr_packing):
         """
         Constructs a new AuthServer object, with the given parameters.
 
@@ -57,6 +58,7 @@ class AuthServer(object):
         Used for testing
         """
 
+        self.packing = packing
         self.token_lifetime = token_lifetime
         self.secret = secret
         self.key_provider = key_provider
@@ -75,11 +77,11 @@ class AuthServer(object):
                                valid_to=int(self.now_func() + RESP_TIMEOUT),
                                username=username)
 
-        b = c.serialize()
+        b = c.serialize(self.packing)
 
         payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
 
-        return ssh.base64url_encode(payload.serialize())
+        return ssh.base64url_encode(payload.serialize(self.packing))
 
     def create_token(self, response):
         """
@@ -91,7 +93,7 @@ class AuthServer(object):
         except ValueError:
             raise exceptions.InvalidInputException("Invalid response sequence")
 
-        r = protocol.Response.deserialize(s)
+        r = protocol.Response.deserialize(self.packing, s)
 
         if not r.hmac_challenge.verify(self._hmac):
             s = "Challenge hmac verification failed, not matching our secret"
@@ -99,7 +101,8 @@ class AuthServer(object):
 
         # verify the integrity of the challenge in the response
 
-        challenge = protocol.Challenge.deserialize(r.hmac_challenge.payload)
+        challenge = protocol.Challenge.deserialize(
+            self.packing, r.hmac_challenge.payload)
 
         if self.server_name != challenge.server_name:
             s = "Got challenge with the wrong server_name encoded"
@@ -132,14 +135,14 @@ class AuthServer(object):
 
     def validate_token(self, token):
         buf = ssh.base64url_decode(token)
-        hmac_token = protocol.VerifiablePayload.deserialize(buf)
+        hmac_token = protocol.VerifiablePayload.deserialize(self.packing, buf)
 
         if not hmac_token.verify(self._hmac):
             raise exceptions.InvalidInputException("Token hmac verification "
                                                    "failed, not matching our "
                                                    "secret")
 
-        t = protocol.Token.deserialize(hmac_token.payload)
+        t = protocol.Token.deserialize(self.packing, hmac_token.payload)
 
         if t.valid_to < self.now_func():
             s = "Token expired at " + time.strftime("%Y-%m-%d %H:%M:%S UTC",
@@ -161,22 +164,25 @@ class AuthServer(object):
                            valid_from=int(self.now_func() - CLOCK_FUDGE),
                            valid_to=expire_time)
 
-        b = t.serialize()
+        b = t.serialize(self.packing)
 
         payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
 
-        return ssh.base64url_encode(payload.serialize())
+        return ssh.base64url_encode(payload.serialize(self.packing))
 
 
-def create_response(challenge, server_name, signer_plug=None):
+def create_response(challenge, server_name, signer_plug=None,
+                    packing=xdr_packing):
     """Called by a client with the challenge provided by the server
     to generate a response using the local ssh-agent"""
 
     b = ssh.base64url_decode(challenge)
 
-    hmac_challenge = protocol.VerifiablePayload.deserialize(b)
+    hmac_challenge = protocol.VerifiablePayload.deserialize(
+        packing, b)
 
-    challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
+    challenge = protocol.Challenge.deserialize(
+        packing, hmac_challenge.payload)
 
     if challenge.server_name != server_name:
         s = ("Possible MITM attack. Challenge originates from '%s' "
@@ -185,13 +191,14 @@ def create_response(challenge, server_name, signer_plug=None):
     if not signer_plug:
         signer_plug = ssh.AgentSigner()
 
-    challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
+    challenge = protocol.Challenge.deserialize(
+        packing, hmac_challenge.payload)
 
-    signature = signer_plug.sign_challenge(challenge)
+    signature = signer_plug.sign(challenge.serialize(packing))
 
     signer_plug.close()
 
     response = protocol.Response(signature=signature,
                                  hmac_challenge=hmac_challenge)
 
-    return ssh.base64url_encode(response.serialize())
+    return ssh.base64url_encode(response.serialize(packing))

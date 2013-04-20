@@ -17,17 +17,33 @@
 # specific language governing permissions and limitations
 # under the License.
 from crtauth import protocol
+from crtauth import xdr_packing
+
+
+packing = xdr_packing
+
+ref_token = protocol.Token(
+    valid_from=1365084334, valid_to=1365084634, username="noa")
 
 
 def test_serialize_token():
-    token = protocol.Token(valid_from=1365084334, valid_to=1365084634,
-                           username="noa")
-    buf = protocol.Token.serialize(token)
-    assert buf == "t\x00\x00\x00Q]\x88\xaeQ]\x89\xda\x00\x00\x00\x03noa\x00"
+    p = packing.Packer()
+    p.pack_fstring(1, protocol.Token.__magic__)
+    p.pack_uint(ref_token.valid_from)
+    p.pack_uint(ref_token.valid_to)
+    p.pack_string(ref_token.username)
+    buf = p.get_buffer()
+
+    ref_buf = ref_token.serialize(packing)
+
+    assert buf == ref_buf
 
 
 def test_deserialize_token():
-    buf = "t\x00\x00\x00Q]\x8b\x17Q]\x8bU\x00\x00\x00\x04test"
-    token = protocol.Token.deserialize(buf)
-    assert token.username == 'test'
-    assert token.valid_from == 1365084951
+    ref_buf = ref_token.serialize(packing)
+
+    token = protocol.Token.deserialize(packing, ref_buf)
+
+    assert token.username == ref_token.username
+    assert token.valid_from == ref_token.valid_from
+    assert token.valid_to == ref_token.valid_to

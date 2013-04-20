@@ -17,29 +17,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import xdrlib
-
 from crtauth.exceptions import InvalidInputException
 
 field_fstring = (
-    lambda p, v, (size,): p.pack_fstring(size, v),
-    lambda u, (size,): u.unpack_fstring(size)
+    lambda P, p, v, (size,): p.pack_fstring(size, v),
+    lambda P, u, (size,): u.unpack_fstring(size)
     )
 
 field_string = (
-    lambda p, v, _: p.pack_string(v),
-    lambda u, _: u.unpack_string()
+    lambda P, p, v, _: p.pack_string(v),
+    lambda P, u, _: u.unpack_string()
     )
 
 field_uint = (
-    lambda p, v, _: p.pack_uint(v),
-    lambda u, _: u.unpack_uint()
+    lambda P, p, v, _: p.pack_uint(v),
+    lambda P, u, _: u.unpack_uint()
     )
 
 field_type = (
-    lambda p, v, _: p.pack_string(v.serialize()),
-    lambda u, (cls,): cls.deserialize(u.unpack_string())
+    lambda P, p, v, _: p.pack_string(v.serialize(P)),
+    lambda P, u, (cls,): cls.deserialize(P, u.unpack_string())
     )
+
 
 class SerializablePacket(object):
     __magic__ = None
@@ -55,27 +54,27 @@ class SerializablePacket(object):
                 raise RuntimeError("Missing required argument '" + key + "'")
             setattr(self, key, val)
 
-    def serialize(self):
+    def serialize(self, packing):
         if self.__magic__ is None or self.__fields__ is None:
             raise RuntimeError("Serialization can only be performed on classes "
                                "implementing __fields__ and __magic__")
 
-        p = xdrlib.Packer()
+        p = packing.Packer()
 
         p.pack_fstring(1, self.__magic__)
 
         for name, ((sx, _), opts) in self.__fields__:
-            sx(p, getattr(self, name), opts)
+            sx(packing, p, getattr(self, name), opts)
 
         return p.get_buffer()
 
     @classmethod
-    def deserialize(cls, buf):
+    def deserialize(cls, packing, buf):
         if cls.__magic__ is None or cls.__fields__ is None:
             raise RuntimeError("Deserialization can only be performed on classes "
                                "implementing __fields__ and __magic__")
 
-        u = xdrlib.Unpacker(buf)
+        u = packing.Unpacker(buf)
 
         if u.unpack_fstring(1) != cls.__magic__:
             raise InvalidInputException("Wrong magic byte for " + cls.__name__ + " "
@@ -84,7 +83,7 @@ class SerializablePacket(object):
         kw = dict()
 
         for name, ((_, dx), opts) in cls.__fields__:
-            kw[name] = dx(u, opts)
+            kw[name] = dx(packing, u, opts)
 
         return cls(**kw)
 
