@@ -21,14 +21,34 @@ from crtauth.exceptions import InvalidInputException
 
 
 class Field(object):
+    """
+    Base class for definining a static field type.
+    """
+
     def pack(self, packing, packer, value):
+        """
+        Pack a value using the specified packer.
+
+        :param packing: Packing method to use.
+        :param packer: Active packer to append value to.
+        :param value: Value to pack.
+        """
         raise NotImplementedError("pack")
 
     def unpack(self, packing, unpacker):
+        """
+        Unpack a value using the specified unpacker.
+
+        :param packing: Packing method to use.
+        :param unpacker: Active unpacker to extract value from.
+        """
         raise NotImplementedError("unpack")
 
 
 class FString(Field):
+    """
+    Fixed length string type.
+    """
     def __init__(self, size):
         self.size = size
 
@@ -40,6 +60,9 @@ class FString(Field):
 
 
 class String(Field):
+    """
+    Variable length string type.
+    """
     def pack(self, packing, packer, value):
         return packer.pack_string(value)
 
@@ -48,6 +71,9 @@ class String(Field):
 
 
 class UInt(Field):
+    """
+    Unsigned integer.
+    """
     def pack(self, packing, packer, value):
         return packer.pack_uint(value)
 
@@ -56,6 +82,9 @@ class UInt(Field):
 
 
 class Type(Field):
+    """
+    Encapsulate other type.
+    """
     def __init__(self, cls):
         self.cls = cls
 
@@ -82,8 +111,9 @@ class SerializablePacket(object):
 
     def serialize(self, packing):
         if self.__magic__ is None or self.__fields__ is None:
-            raise RuntimeError("Serialization can only be performed on classes "
-                               "implementing __fields__ and __magic__")
+            raise RuntimeError(
+                "Serialization can only be performed on classes implementing "
+                "__fields__ and __magic__")
 
         p = packing.Packer()
 
@@ -98,14 +128,16 @@ class SerializablePacket(object):
     @classmethod
     def deserialize(cls, packing, buf):
         if cls.__magic__ is None or cls.__fields__ is None:
-            raise RuntimeError("Deserialization can only be performed on classes "
-                               "implementing __fields__ and __magic__")
+            raise RuntimeError(
+                "Deserialization can only be performed on classes "
+                "implementing __fields__ and __magic__")
 
         u = packing.Unpacker(buf)
 
         if u.unpack_fstring(1) != cls.__magic__:
-            raise InvalidInputException("Wrong magic byte for " + cls.__name__ + " "
-                                                                                 "(should be '" + hex(ord(cls.__magic__)) + "')")
+            raise InvalidInputException(
+                "Wrong magic byte for " + cls.__name__ +
+                " (should be '" + hex(ord(cls.__magic__)) + "')")
 
         kw = dict()
 
@@ -113,6 +145,7 @@ class SerializablePacket(object):
             kw[name] = field.unpack(packing, u)
 
         return cls(**kw)
+
 
 class VerifiablePayload(SerializablePacket):
     """
@@ -132,6 +165,7 @@ class VerifiablePayload(SerializablePacket):
     def verify(self, digest_f):
         return self.digest == digest_f(self.payload)
 
+
 class Challenge(SerializablePacket):
     """
     Represents a challenge, with binary serialization support
@@ -148,6 +182,7 @@ class Challenge(SerializablePacket):
         ("username", String()),
     ]
 
+
 class Response(SerializablePacket):
     """
     Represents a response to a challenge.
@@ -162,15 +197,15 @@ class Response(SerializablePacket):
         ("hmac_challenge", Type(VerifiablePayload))
     ]
 
+
 class Token(SerializablePacket):
     """
     A token which verifies that can be used to authorize a specific user.
     """
     __magic__ = 't'
 
-    __fields__ = (
+    __fields__ = [
         ("valid_from", UInt()),
         ("valid_to", UInt()),
         ("username", String()),
-        )
-
+    ]
