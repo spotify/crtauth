@@ -17,29 +17,37 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import xdrlib
+
 from crtauth.exceptions import InvalidInputException
+
+# to support another serialization mechanism, replace these with references
+# to other classes that implements the needed methods for all handled data
+# types
+packer_class = xdrlib.Packer
+unpacker_class = xdrlib.Unpacker
 
 
 class Field(object):
     """
-    Base class for definining a static field type.
+    Instances of the subclasses of Field knows how to pack and unpack
+    themselves into and out of a [un]packer instance that provide the methods
+    of xdrlib.Packer() and xdrlib.Unpacker()
     """
 
-    def pack(self, packing, packer, value):
+    def pack(self, packer, value):
         """
         Pack a value using the specified packer.
 
-        :param packing: Packing method to use.
         :param packer: Active packer to append value to.
         :param value: Value to pack.
         """
         raise NotImplementedError("pack")
 
-    def unpack(self, packing, unpacker):
+    def unpack(self, unpacker):
         """
         Unpack a value using the specified unpacker.
 
-        :param packing: Packing method to use.
         :param unpacker: Active unpacker to extract value from.
         """
         raise NotImplementedError("unpack")
@@ -52,10 +60,10 @@ class FString(Field):
     def __init__(self, size):
         self.size = size
 
-    def pack(self, packing, packer, value):
+    def pack(self, packer, value):
         return packer.pack_fstring(self.size, value)
 
-    def unpack(self, packing, unpacker):
+    def unpack(self, unpacker):
         return unpacker.unpack_fstring(self.size)
 
 
@@ -63,10 +71,10 @@ class String(Field):
     """
     Variable length string type.
     """
-    def pack(self, packing, packer, value):
+    def pack(self, packer, value):
         return packer.pack_string(value)
 
-    def unpack(self, packing, unpacker):
+    def unpack(self, unpacker):
         return unpacker.unpack_string()
 
 
@@ -74,10 +82,10 @@ class UInt(Field):
     """
     Unsigned integer.
     """
-    def pack(self, packing, packer, value):
+    def pack(self, packer, value):
         return packer.pack_uint(value)
 
-    def unpack(self, packing, unpacker):
+    def unpack(self, unpacker):
         return unpacker.unpack_uint()
 
 
@@ -88,11 +96,11 @@ class Type(Field):
     def __init__(self, cls):
         self.cls = cls
 
-    def pack(self, packing, packer, value):
-        return packer.pack_string(value.serialize(packing))
+    def pack(self, packer, value):
+        return packer.pack_string(value.serialize())
 
-    def unpack(self, packing, unpacker):
-        return self.cls.deserialize(packing, unpacker.unpack_string())
+    def unpack(self, unpacker):
+        return self.cls.deserialize(unpacker.unpack_string())
 
 
 class SerializablePacket(object):
@@ -109,30 +117,30 @@ class SerializablePacket(object):
                 raise RuntimeError("Missing required argument '" + key + "'")
             setattr(self, key, val)
 
-    def serialize(self, packing):
+    def serialize(self):
         if self.__magic__ is None or self.__fields__ is None:
             raise RuntimeError(
                 "Serialization can only be performed on classes implementing "
                 "__fields__ and __magic__")
 
-        p = packing.Packer()
+        p = packer_class()
 
         p.pack_fstring(1, self.__magic__)
 
         for name, field in self.__fields__:
             value = getattr(self, name)
-            field.pack(packing, p, value)
+            field.pack(p, value)
 
         return p.get_buffer()
 
     @classmethod
-    def deserialize(cls, packing, buf):
+    def deserialize(cls, buf):
         if cls.__magic__ is None or cls.__fields__ is None:
             raise RuntimeError(
                 "Deserialization can only be performed on classes "
                 "implementing __fields__ and __magic__")
 
-        u = packing.Unpacker(buf)
+        u = unpacker_class(buf)
 
         if u.unpack_fstring(1) != cls.__magic__:
             raise InvalidInputException(
@@ -142,7 +150,7 @@ class SerializablePacket(object):
         kw = dict()
 
         for name, field in cls.__fields__:
-            kw[name] = field.unpack(packing, u)
+            kw[name] = field.unpack(u)
 
         return cls(**kw)
 

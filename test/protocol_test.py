@@ -16,33 +16,31 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import xdrlib
 from crtauth import protocol
-from crtauth import xdr_packing
 
-
-packing = xdr_packing
 
 ref_token = protocol.Token(
     valid_from=1365084334, valid_to=1365084634, username="noa")
 
 
 def test_serialize_token():
-    p = packing.Packer()
+    p = xdrlib.Packer()
     p.pack_fstring(1, protocol.Token.__magic__)
     p.pack_uint(ref_token.valid_from)
     p.pack_uint(ref_token.valid_to)
     p.pack_string(ref_token.username)
     buf = p.get_buffer()
 
-    ref_buf = ref_token.serialize(packing)
+    ref_buf = ref_token.serialize()
 
     assert buf == ref_buf
 
 
 def test_deserialize_token():
-    ref_buf = ref_token.serialize(packing)
+    ref_buf = ref_token.serialize()
 
-    token = protocol.Token.deserialize(packing, ref_buf)
+    token = protocol.Token.deserialize(ref_buf)
 
     assert token.username == ref_token.username
     assert token.valid_from == ref_token.valid_from

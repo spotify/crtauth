@@ -25,7 +25,6 @@ from crtauth import rsa
 from crtauth import protocol
 from crtauth import ssh
 from crtauth import exceptions
-from crtauth import xdr_packing
 
 inner_s = ("AAAAB3NzaC1yc2EAAAABIwAAAQEArt7xdaxlbzzGlgLhqpLuE5x9d+so0M"
            "JiqQSmiUJojuK+v1cxnYCnQQPF0BkAhw2hiFiDvLLVogIu8m2wCV9XAGxrz38NLHVq"
@@ -95,11 +94,9 @@ class SshTest(unittest.TestCase):
         s = auth_server.create_challenge("noa")
         cb = ssh.base64url_decode(s)
 
-        verifiable_payload = protocol.VerifiablePayload.deserialize(
-            xdr_packing, cb)
+        verifiable_payload = protocol.VerifiablePayload.deserialize(cb)
 
-        challenge = protocol.Challenge.deserialize(
-            xdr_packing, verifiable_payload.payload)
+        challenge = protocol.Challenge.deserialize(verifiable_payload.payload)
 
         self.assertEquals("\xfb\xa1\xeao\xd3y", challenge.fingerprint)
 
