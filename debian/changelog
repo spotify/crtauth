@@ -1,3 +1,9 @@
+crtauth (0.1.1-1) stable; urgency=low
+
+  * udoprog's protocol refactoring, somewhat modified
+
+ -- Noa Resare <noa@spotify.com>  Mon, 20 May 2013 08:10:58 +0000
+
 crtauth (0.1.0-1) stable; urgency=low
 
   * Initial release.
