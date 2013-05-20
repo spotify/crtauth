@@ -21,25 +21,87 @@ import xdrlib
 
 from crtauth.exceptions import InvalidInputException
 
-field_fstring = (
-    lambda p, v, (size,): p.pack_fstring(size, v),
-    lambda u, (size,): u.unpack_fstring(size)
-    )
+# to support another serialization mechanism, replace these with references
+# to other classes that implements the needed methods for all handled data
+# types
+packer_class = xdrlib.Packer
+unpacker_class = xdrlib.Unpacker
 
-field_string = (
-    lambda p, v, _: p.pack_string(v),
-    lambda u, _: u.unpack_string()
-    )
 
-field_uint = (
-    lambda p, v, _: p.pack_uint(v),
-    lambda u, _: u.unpack_uint()
-    )
+class Field(object):
+    """
+    Instances of the subclasses of Field knows how to pack and unpack
+    themselves into and out of a [un]packer instance that provide the methods
+    of xdrlib.Packer() and xdrlib.Unpacker()
+    """
 
-field_type = (
-    lambda p, v, _: p.pack_string(v.serialize()),
-    lambda u, (cls,): cls.deserialize(u.unpack_string())
-    )
+    def pack(self, packer, value):
+        """
+        Pack a value using the specified packer.
+
+        :param packer: Active packer to append value to.
+        :param value: Value to pack.
+        """
+        raise NotImplementedError("pack")
+
+    def unpack(self, unpacker):
+        """
+        Unpack a value using the specified unpacker.
+
+        :param unpacker: Active unpacker to extract value from.
+        """
+        raise NotImplementedError("unpack")
+
+
+class FString(Field):
+    """
+    Fixed length string type.
+    """
+    def __init__(self, size):
+        self.size = size
+
+    def pack(self, packer, value):
+        return packer.pack_fstring(self.size, value)
+
+    def unpack(self, unpacker):
+        return unpacker.unpack_fstring(self.size)
+
+
+class String(Field):
+    """
+    Variable length string type.
+    """
+    def pack(self, packer, value):
+        return packer.pack_string(value)
+
+    def unpack(self, unpacker):
+        return unpacker.unpack_string()
+
+
+class UInt(Field):
+    """
+    Unsigned integer.
+    """
+    def pack(self, packer, value):
+        return packer.pack_uint(value)
+
+    def unpack(self, unpacker):
+        return unpacker.unpack_uint()
+
+
+class Type(Field):
+    """
+    Encapsulate other type.
+    """
+    def __init__(self, cls):
+        self.cls = cls
+
+    def pack(self, packer, value):
+        return packer.pack_string(value.serialize())
+
+    def unpack(self, unpacker):
+        return self.cls.deserialize(unpacker.unpack_string())
+
 
 class SerializablePacket(object):
     __magic__ = None
@@ -57,36 +119,41 @@ class SerializablePacket(object):
 
     def serialize(self):
         if self.__magic__ is None or self.__fields__ is None:
-            raise RuntimeError("Serialization can only be performed on classes "
-                               "implementing __fields__ and __magic__")
+            raise RuntimeError(
+                "Serialization can only be performed on classes implementing "
+                "__fields__ and __magic__")
 
-        p = xdrlib.Packer()
+        p = packer_class()
 
         p.pack_fstring(1, self.__magic__)
 
-        for name, ((sx, _), opts) in self.__fields__:
-            sx(p, getattr(self, name), opts)
+        for name, field in self.__fields__:
+            value = getattr(self, name)
+            field.pack(p, value)
 
         return p.get_buffer()
 
     @classmethod
     def deserialize(cls, buf):
         if cls.__magic__ is None or cls.__fields__ is None:
-            raise RuntimeError("Deserialization can only be performed on classes "
-                               "implementing __fields__ and __magic__")
+            raise RuntimeError(
+                "Deserialization can only be performed on classes "
+                "implementing __fields__ and __magic__")
 
-        u = xdrlib.Unpacker(buf)
+        u = unpacker_class(buf)
 
         if u.unpack_fstring(1) != cls.__magic__:
-            raise InvalidInputException("Wrong magic byte for " + cls.__name__ + " "
-                                                                                 "(should be '" + hex(ord(cls.__magic__)) + "')")
+            raise InvalidInputException(
+                "Wrong magic byte for " + cls.__name__ +
+                " (should be '" + hex(ord(cls.__magic__)) + "')")
 
         kw = dict()
 
-        for name, ((_, dx), opts) in cls.__fields__:
-            kw[name] = dx(u, opts)
+        for name, field in cls.__fields__:
+            kw[name] = field.unpack(u)
 
         return cls(**kw)
+
 
 class VerifiablePayload(SerializablePacket):
     """
@@ -99,12 +166,13 @@ class VerifiablePayload(SerializablePacket):
     __magic__ = 'v'
 
     __fields__ = [
-        ("digest", (field_fstring, (20,))),
-        ("payload", (field_string, None))
+        ("digest", FString(20)),
+        ("payload", String()),
     ]
 
     def verify(self, digest_f):
         return self.digest == digest_f(self.payload)
+
 
 class Challenge(SerializablePacket):
     """
@@ -114,13 +182,14 @@ class Challenge(SerializablePacket):
     __magic__ = 'c'
 
     __fields__ = [
-        ("unique_data", (field_fstring, (20,))),
-        ("valid_from", (field_uint, None)),
-        ("valid_to", (field_uint, None)),
-        ("fingerprint", (field_string, None)),
-        ("server_name", (field_string, None)),
-        ("username", (field_string, None))
+        ("unique_data", FString(20)),
+        ("valid_from", UInt()),
+        ("valid_to", UInt()),
+        ("fingerprint", String()),
+        ("server_name", String()),
+        ("username", String()),
     ]
+
 
 class Response(SerializablePacket):
     """
@@ -132,9 +201,10 @@ class Response(SerializablePacket):
     __magic__ = 'r'
 
     __fields__ = [
-        ("signature", (field_string, None)),
-        ("hmac_challenge", (field_type, (VerifiablePayload,)))
+        ("signature", String()),
+        ("hmac_challenge", Type(VerifiablePayload))
     ]
+
 
 class Token(SerializablePacket):
     """
@@ -142,9 +212,8 @@ class Token(SerializablePacket):
     """
     __magic__ = 't'
 
-    __fields__ = (
-        ("valid_from", (field_uint, None)),
-        ("valid_to", (field_uint, None)),
-        ("username", (field_string, None))
-        )
-
+    __fields__ = [
+        ("valid_from", UInt()),
+        ("valid_to", UInt()),
+        ("username", String()),
+    ]

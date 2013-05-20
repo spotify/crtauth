@@ -95,6 +95,7 @@ class SshTest(unittest.TestCase):
         cb = ssh.base64url_decode(s)
 
         verifiable_payload = protocol.VerifiablePayload.deserialize(cb)
+
         challenge = protocol.Challenge.deserialize(verifiable_payload.payload)
 
         self.assertEquals("\xfb\xa1\xeao\xd3y", challenge.fingerprint)

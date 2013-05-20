@@ -187,7 +187,7 @@ def create_response(challenge, server_name, signer_plug=None):
 
     challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
 
-    signature = signer_plug.sign_challenge(challenge)
+    signature = signer_plug.sign(challenge.serialize())
 
     signer_plug.close()
 
