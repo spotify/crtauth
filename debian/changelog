@@ -1,3 +1,9 @@
+crtauth (0.1.2-1) stable; urgency=low
+
+  * fixed inconsistent SigningPlug API
+
+ -- Noa Resare <noa@spotify.com> Mon, 27 May 2013 13:22:53 +0000
+
 crtauth (0.1.1-1) stable; urgency=low
 
   * udoprog's protocol refactoring, somewhat modified

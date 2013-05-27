@@ -185,9 +185,7 @@ def create_response(challenge, server_name, signer_plug=None):
     if not signer_plug:
         signer_plug = ssh.AgentSigner()
 
-    challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
-
-    signature = signer_plug.sign(challenge.serialize())
+    signature = signer_plug.sign_challenge(challenge)
 
     signer_plug.close()
 

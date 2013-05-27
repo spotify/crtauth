@@ -81,7 +81,7 @@ class SigningPlug(object):
 
     Signing classes can also be used as context managers.
     """
-    def sign(self, b):
+    def sign_challenge(self, _):
         raise NotImplementedError("Don't use the SigningPlug directly. This "
                                   "is an abstract base class")
 
@@ -105,8 +105,8 @@ class SingleKeySigner(SigningPlug):
     def __init__(self, priv_key):
         self.key = rsa.RSAPrivateKey(priv_key)
 
-    def sign(self, b):
-        return self.key.sign(b)
+    def sign_challenge(self, challenge):
+        return self.key.sign(challenge.serialize())
 
 
 class AgentSigner(SigningPlug):
