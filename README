@@ -18,13 +18,44 @@ The name of the project is derived from the central concepts challenge,
 response, token and authentication, while at the same time reminding us old
 timers of the soon to be forgotten cathode ray tube screen technology.
 
-Example use case
-----------------
+Technical details
+-----------------
 
 Command line tools that connect to a central server to perform some action or
 fetch some information can be a very useful thing. Let's say you have a service
 that exposes information about servers using an http based API.
 
+The basic operation of the protocol follows the following pattern
+
+# The client requests a challenge from the server, providing a username.
+# The server creates a challenge that gets sent back to the client.
+# The client signs the challenge and returns the response to the server.
+# The server verifies that the response is valid and if so it issues an access
+  token to the client.
+# The access token is provided to when calling protected services.
+# The server validates that the token is valid and if so, provides access
+  to the client.
+
+The that implement this mechanism has two parts, one for the server and one
+for the client. A server that wants to authenticate clients instantiates an
+AuthServer instance (defined in the crtauth.server module) with a secret and
+a KeyProvider instance as constructor arguments. The very simple FileKeyProvider
+reads public keys from a filesystem directory.
+
+Once there is an AuthServer instance, it can generate a challenge string for
+a specific user using the create_challenge() method.
+
+The client part of the mechanism is also contained in the crtauth.server module,
+in the create_response() function. It takes a challenge string provided by the
+server and returns a response string suitable for sending back to the server.
+
+The server in turn validates the response from the client and if it checks out
+it returns an access token that can be used by the client to make authenticated
+requests. This validation is done in the create_token() method of the AuthServer
+class.
+
+For subsequent calls to protected services, the provided access token can be
+verified using the validate_token() method of the AuthServer instance.
 
 License
 -------
