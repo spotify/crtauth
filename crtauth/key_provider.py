@@ -38,8 +38,8 @@ class FileKeyProvider(KeyProvider):
 
     def get_key(self, username):
         if "/" in username:
-            raise RuntimeError("Don't trick me into opening files by having "
-                               "slash in username!")
+            raise exceptions.CrtAuthError("Don't trick me into opening files "
+                                          "by having slash in username!")
         fn = "%s/%s_id_rsa.pub" % (self.dir, username)
         if not os.path.exists(fn):
             raise exceptions.NoSuchUserException()

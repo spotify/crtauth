@@ -18,7 +18,35 @@
 # under the License.
 
 
-class AuthenticationError(Exception):
+class CrtAuthError(Exception):
+    """
+    The base exception class for crtauth.
+    """
+    pass
+
+
+class ProtocolError(CrtAuthError):
+    """
+    Raised for errors encountered whilst handling the crtauth protocol.
+    """
+    pass
+
+
+class KeyError(CrtAuthError):
+    """
+    Raised for errors encountered whilst handling encryption keys.
+    """
+    pass
+
+
+class SshAgentError(CrtAuthError):
+    """
+    Raised for errors encountered whilst dealing with the SSH agent.
+    """
+    pass
+
+
+class AuthenticationError(CrtAuthError):
     """
     The base exception class for errors caused by the client side (invalid
     username, wrong response to challenge, etc.)
