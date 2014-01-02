@@ -22,6 +22,8 @@ import sys
 import os
 import socket
 import struct
+
+from crtauth import exceptions
 from crtauth import rsa
 
 # ssh-agent communication protocol constants
@@ -48,8 +50,9 @@ def base64url_decode(s):
     try:
         return base64.b64decode(s, "-_")
     except:
-        _, _, tb = sys.exc_info()
-        raise ValueError("bad base64 sequence"), None, tb
+        _, e, tb = sys.exc_info()
+        raise exceptions.CrtAuthError(
+            "Invalid base64 sequence: %s" % e), None, tb
 
 
 def base64url_encode(data):
@@ -122,8 +125,10 @@ class AgentSigner(SigningPlug):
         self.sock = socket.socket(socket.AF_UNIX)
         sock_path = os.getenv("SSH_AUTH_SOCK")
         if not sock_path:
-            raise RuntimeError("The environment variable SSH_AUTH_SOCK is "
-                               "not set. Please configure ssh-agent")
+            raise exceptions.SshAgentError(
+                "The environment variable SSH_AUTH_SOCK is not set. Please "
+                "configure your ssh-agent.")
+        self.sock.settimeout(5.0)
         self.sock.connect(sock_path)
 
     def __find_key(self, key_fingerprint):
@@ -136,7 +141,7 @@ class AgentSigner(SigningPlug):
         for i in xrange(count):
             try:
                 key = rsa.RSAPublicKey(fields.next())
-            except RuntimeError:
+            except exceptions.KeyError:
                 fields.next()
                 continue
             fields.next()  # ignore filename for key
@@ -144,28 +149,31 @@ class AgentSigner(SigningPlug):
                 return key
 
     def sign_challenge(self, challenge):
-        pub_key = self.__find_key(challenge.fingerprint)
+        try:
+            pub_key = self.__find_key(challenge.fingerprint)
 
-        if not pub_key:
-            raise RuntimeError("Your ssh-agent does not have the proper "
-                               "key added. This usually indicates that "
-                               "ssh-add has not been run")
+            if not pub_key:
+                raise exceptions.SshAgentError(
+                    "Your ssh-agent does not have the required key added. This "
+                    "usually indicates that ssh-add has not been run.")
 
-        challenge_bytes = challenge.serialize()
+            challenge_bytes = challenge.serialize()
 
-        self.sock.send(i2s(len(pub_key) + len(challenge_bytes) + 13) +
-                       chr(SSH2_AGENTC_SIGN_REQUEST))
-        write_field(self.sock, pub_key)
-        write_field(self.sock, challenge_bytes)
-        self.sock.send("\0\0\0\0")
-        length, response_code, resp_len = struct.unpack("!IBI",
-                                                        self.sock.recv(9))
-        assert response_code == SSH2_AGENT_SIGN_RESPONSE
-        buf = self.sock.recv(length - 5)
-        fields = rsa.read_fields(buf)
-        response_type = fields.next()
-        assert response_type == "ssh-rsa"
-        return fields.next()
+            self.sock.send(i2s(len(pub_key) + len(challenge_bytes) + 13) +
+                           chr(SSH2_AGENTC_SIGN_REQUEST))
+            write_field(self.sock, pub_key)
+            write_field(self.sock, challenge_bytes)
+            self.sock.send("\0\0\0\0")
+            length, response_code, resp_len = struct.unpack("!IBI",
+                                                            self.sock.recv(9))
+            assert response_code == SSH2_AGENT_SIGN_RESPONSE
+            buf = self.sock.recv(length - 5)
+            fields = rsa.read_fields(buf)
+            response_type = fields.next()
+            assert response_type == "ssh-rsa"
+            return fields.next()
+        except socket.timeout as why:
+            raise exceptions.SshAgentError(why)
 
     def close(self):
         self.sock.close()

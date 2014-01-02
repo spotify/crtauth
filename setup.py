@@ -19,7 +19,7 @@
 
 from distutils.core import setup
 
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 
 setup(
     name='crtauth',

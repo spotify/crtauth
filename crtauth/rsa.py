@@ -25,6 +25,8 @@ import base64
 import hashlib
 import binascii
 
+from crtauth import exceptions
+
 
 class RSAPrivateKey(object):
     def __init__(self, private_key):
@@ -44,8 +46,9 @@ class RSAPrivateKey(object):
 
     def encrypt(self, data):
         if len(data) > self.mod_size:
-            raise RuntimeError("Key size too small, more than %d bytes of "
-                               "data can not be encrypted" % self.mod_size)
+            raise exceptions.KeyError("Key size too small, more than %d bytes "
+                                      "of data can not be encrypted" %
+                                      self.mod_size)
         return _int_to_str(pow(_str_to_int(data), self.private_exp, self.mod))
 
     def sign(self, data):
@@ -70,8 +73,9 @@ class RSAPublicKey(object):
         fields = read_fields(self.encoded)
         sigtype = fields.next()
         if sigtype != "ssh-rsa":
-            raise RuntimeError("Unknown key type %s. This code currently "
-                               "only supports ssh-rsa" % sigtype)
+            raise exceptions.KeyError("Unknown key type %s. This code "
+                                      "currently only supports ssh-rsa" %
+                                      sigtype)
         self.exp = _str_to_int(fields.next())
         self.mod = _str_to_int(fields.next())
         # it turns out that ssh writes leading zeroes, which we get rid of

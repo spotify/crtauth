@@ -88,8 +88,8 @@ class AuthServer(object):
         """
         try:
             s = ssh.base64url_decode(response)
-        except ValueError:
-            raise exceptions.InvalidInputException("Invalid response sequence")
+        except exceptions.CrtAuthError as why:
+            raise exceptions.InvalidInputException(why)
 
         r = protocol.Response.deserialize(s)
 

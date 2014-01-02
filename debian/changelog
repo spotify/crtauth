@@ -1,8 +1,15 @@
+crtauth (0.1.3-1) stable; urgency=low
+
+  * Use less generic exceptions per #5
+  * Set five second timeout on SSH agent socket per #6
+
+ -- Nic Cope <negz@spotify.com>  Tue, 31 Dec 2013 17:54:23 +0000
+
 crtauth (0.1.2-1) stable; urgency=low
 
   * fixed inconsistent SigningPlug API
 
- -- Noa Resare <noa@spotify.com> Mon, 27 May 2013 13:22:53 +0000
+ -- Noa Resare <noa@spotify.com>  Mon, 27 May 2013 13:22:53 +0000
 
 crtauth (0.1.1-1) stable; urgency=low
 

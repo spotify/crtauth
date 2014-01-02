@@ -19,7 +19,7 @@
 
 import xdrlib
 
-from crtauth.exceptions import InvalidInputException
+from crtauth import exceptions
 
 # to support another serialization mechanism, replace these with references
 # to other classes that implements the needed methods for all handled data
@@ -109,17 +109,18 @@ class SerializablePacket(object):
 
     def __init__(self, **kw):
         if len(kw) != len(self.__fields__):
-            raise RuntimeError("Field length mismatch")
+            raise exceptions.ProtocolError("Field length mismatch")
 
         for key, _ in self.__fields__:
             val = kw.get(key, None)
             if val is None:
-                raise RuntimeError("Missing required argument '" + key + "'")
+                raise exceptions.ProtocolError("Missing required argument "
+                                               "'%s'" % key)
             setattr(self, key, val)
 
     def serialize(self):
         if self.__magic__ is None or self.__fields__ is None:
-            raise RuntimeError(
+            raise exceptions.ProtocolError(
                 "Serialization can only be performed on classes implementing "
                 "__fields__ and __magic__")
 
@@ -136,14 +137,14 @@ class SerializablePacket(object):
     @classmethod
     def deserialize(cls, buf):
         if cls.__magic__ is None or cls.__fields__ is None:
-            raise RuntimeError(
+            raise exceptions.ProtocolError(
                 "Deserialization can only be performed on classes "
                 "implementing __fields__ and __magic__")
 
         u = unpacker_class(buf)
 
         if u.unpack_fstring(1) != cls.__magic__:
-            raise InvalidInputException(
+            raise exceptions.ProtocolError(
                 "Wrong magic byte for " + cls.__name__ +
                 " (should be '" + hex(ord(cls.__magic__)) + "')")
 

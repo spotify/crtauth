@@ -235,4 +235,4 @@ class DummyKeyProvider(key_provider.KeyProvider):
         elif username == 'test':
             return rsa.RSAPublicKey(t_pubkey)
         else:
-            raise RuntimeError("Unknown username: %s" % username)
+            raise exceptions.CrtAuthError("Unknown username: %s" % username)
