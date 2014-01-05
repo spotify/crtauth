@@ -174,7 +174,7 @@ class SshTest(unittest.TestCase):
             try:
                 auth_server.create_token(t)
                 self.fail("Input is invalid, should have thrown exception")
-            except exceptions.InvalidInputException:
+            except exceptions.ProtocolError:
                 pass
 
     def test_validate_token_too_old(self):
@@ -218,8 +218,8 @@ class SshTest(unittest.TestCase):
         try:
             auth_server.validate_token("AXUDbm9hAXQETq5wlQd4BZrti6vbDk9p"
                                        "I1-m_6Y4S6Ar")
-            self.fail("Should have gotten InvalidInputException")
-        except exceptions.InvalidInputException:
+            self.fail("Should have gotten ProtocolError")
+        except exceptions.ProtocolError:
             pass
 
     def test_b64_roundtrip(self):
