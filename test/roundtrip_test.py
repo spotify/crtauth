@@ -212,14 +212,19 @@ class SshTest(unittest.TestCase):
             pass
 
     def test_validate_token_wrong_secret(self):
+        token = "dgAAAJgtmNoqST9RaxayI7UP5-GLviUDAAAAFHQAAABUJYr_VCWLPQAAAAR0ZXN0"
+        auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
+                                        "server_name",
+                                        now_func=lambda: 1411746561.058992)
+        auth_server.validate_token(token)
+
         auth_server = server.AuthServer("wrong_secret", DummyKeyProvider(),
                                         "server_name",
-                                        now_func=lambda: 1320054873.817021)
+                                        now_func=lambda: 1411746561.058992)
         try:
-            auth_server.validate_token("AXUDbm9hAXQETq5wlQd4BZrti6vbDk9p"
-                                       "I1-m_6Y4S6Ar")
-            self.fail("Should have gotten ProtocolError")
-        except exceptions.ProtocolError:
+            auth_server.validate_token(token)
+            self.fail("Should have gotten InvalidInputException")
+        except exceptions.InvalidInputException:
             pass
 
     def test_b64_roundtrip(self):
