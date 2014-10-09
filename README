@@ -57,6 +57,14 @@ class.
 For subsequent calls to protected services, the provided access token can be
 verified using the validate_token() method of the AuthServer instance.
 
+SSH keys from LDAP
+------------------
+
+This library also provides functionality to extract public ssh keys for
+connecting users using an LDAP directory. To use this functionality, which
+is available in the ldap_key_provider.py module, the python-ldap module needs
+to be installed.
+
 License
 -------
 
