@@ -105,12 +105,7 @@ class RSAPublicKey(object):
                          (self.mod_size - len(decrypted))) + decrypted
         padded_digest = (_make_padding(self.mod_size) +
                          hashlib.sha1(data).digest())
-        if padded_digest == decrypted:
-            return True
-        print "dec: %s" % repr(decrypted)
-        print "loc: %s" % repr(padded_digest)
-        return False
-        #return  padded_digest == decrypted
+        return padded_digest == decrypted
 
 
 def read_fields(bytes):

@@ -51,7 +51,7 @@ def base64url_decode(s):
         return base64.b64decode(s, "-_")
     except:
         _, e, tb = sys.exc_info()
-        raise exceptions.CrtAuthError(
+        raise exceptions.InvalidInputException(
             "Invalid base64 sequence: %s" % e), None, tb
 
 
@@ -84,7 +84,7 @@ class SigningPlug(object):
 
     Signing classes can also be used as context managers.
     """
-    def sign_challenge(self, _):
+    def sign(self, data, fingerprint):
         raise NotImplementedError("Don't use the SigningPlug directly. This "
                                   "is an abstract base class")
 
@@ -108,8 +108,8 @@ class SingleKeySigner(SigningPlug):
     def __init__(self, priv_key):
         self.key = rsa.RSAPrivateKey(priv_key)
 
-    def sign_challenge(self, challenge):
-        return self.key.sign(challenge.serialize())
+    def sign(self, data, fingerprint):
+        return self.key.sign(data)
 
 
 class AgentSigner(SigningPlug):
@@ -148,21 +148,19 @@ class AgentSigner(SigningPlug):
             if key.fingerprint() == key_fingerprint:
                 return key
 
-    def sign_challenge(self, challenge):
+    def sign(self, data, fingerprint):
         try:
-            pub_key = self.__find_key(challenge.fingerprint)
+            pub_key = self.__find_key(fingerprint)
 
             if not pub_key:
                 raise exceptions.SshAgentError(
                     "Your ssh-agent does not have the required key added. This "
                     "usually indicates that ssh-add has not been run.")
 
-            challenge_bytes = challenge.serialize()
-
-            self.sock.send(i2s(len(pub_key) + len(challenge_bytes) + 13) +
+            self.sock.send(i2s(len(pub_key) + len(data) + 13) +
                            chr(SSH2_AGENTC_SIGN_REQUEST))
             write_field(self.sock, pub_key)
-            write_field(self.sock, challenge_bytes)
+            write_field(self.sock, data)
             self.sock.send("\0\0\0\0")
             length, response_code, resp_len = struct.unpack("!IBI",
                                                             self.sock.recv(9))

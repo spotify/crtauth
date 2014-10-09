@@ -25,6 +25,7 @@ from crtauth import rsa
 from crtauth import protocol
 from crtauth import ssh
 from crtauth import exceptions
+from crtauth import msgpack_protocol
 
 inner_s = ("AAAAB3NzaC1yc2EAAAABIwAAAQEArt7xdaxlbzzGlgLhqpLuE5x9d+so0M"
            "JiqQSmiUJojuK+v1cxnYCnQQPF0BkAhw2hiFiDvLLVogIu8m2wCV9XAGxrz38NLHVq"
@@ -72,7 +73,7 @@ A2rtAoGAMv92fqI+B5taxlZhTLAIaGVFbzoASHTRl3eQJbc4zc38U3Zbiy4deMEH
 -----END RSA PRIVATE KEY-----"""
 
 
-class SshTest(unittest.TestCase):
+class RoundtripTest(unittest.TestCase):
 
     def test_read_base64_key(self):
         key = rsa.RSAPublicKey(s)
@@ -100,6 +101,34 @@ class SshTest(unittest.TestCase):
 
         self.assertEquals("\xfb\xa1\xeao\xd3y", challenge.fingerprint)
 
+    def test_create_challenge_v1(self):
+        auth_server = server.AuthServer("secret", DummyKeyProvider(),
+                                        "server_name")
+        challenge = auth_server.create_challenge("noa", 1)
+        cb = ssh.base64url_decode(challenge)
+
+        decoded_challenge = msgpack_protocol.Challenge.deserialize(cb)
+
+        self.assertEquals("\xfb\xa1\xeao\xd3y", decoded_challenge.fingerprint)
+
+    def test_create_challenge_no_legacy_support(self):
+        auth_server = server.AuthServer("secret", DummyKeyProvider(),
+                                        "server_name",
+                                        lowest_supported_version=1)
+        self.assertRaises(exceptions.ProtocolVersionError,
+                          auth_server.create_challenge, "noa")
+
+    def test_create_challenge_v1(self):
+        auth_server = server.AuthServer("secret", DummyKeyProvider(),
+                                        "server_name",
+                                        lowest_supported_version=1)
+        challenge = auth_server.create_challenge("noa", 1)
+        cb = ssh.base64url_decode(challenge)
+
+        decoded_challenge = msgpack_protocol.Challenge.deserialize(cb)
+
+        self.assertEquals("\xfb\xa1\xeao\xd3y", decoded_challenge.fingerprint)
+
     def test_authentication_roundtrip(self):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
                                         "server_name")
@@ -108,6 +137,16 @@ class SshTest(unittest.TestCase):
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server.create_token(response)
         self.assertTrue(auth_server.validate_token(token))
+
+    def test_authentication_roundtrip_v1(self):
+        auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
+                                        "server_name")
+        challenge = auth_server.create_challenge("test", 1)
+        response = server.create_response(challenge, "server_name",
+                                          ssh.SingleKeySigner(test_priv_key))
+        token = auth_server.create_token(response)
+        self.assertTrue(auth_server.validate_token(token))
+
 
     def test_authentication_roundtrip_mitm1(self):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
