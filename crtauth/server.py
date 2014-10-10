@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2013 Spotify AB
+# Copyright (c) 2011-2014 Spotify AB
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -25,6 +25,7 @@ import time
 from crtauth import ssh
 from crtauth import exceptions
 from crtauth import protocol
+from crtauth import msgpack_protocol
 
 # The maximum number of seconds from a challenge is created to the time when
 # the generated response is processed. This needs to compensate for clock
@@ -38,7 +39,7 @@ CLOCK_FUDGE = 2
 
 class AuthServer(object):
     def __init__(self, secret, key_provider, server_name, token_lifetime=60,
-                 now_func=time.time):
+                 now_func=time.time, lowest_supported_version=0):
         """
         Constructs a new AuthServer object, with the given parameters.
 
@@ -55,6 +56,9 @@ class AuthServer(object):
 
         @param now_func a function that returns current time in unix seconds.
         Used for testing
+
+        @lowest_supported_version an integer that indicates the lowest protocol
+        version that is supported, 0 represents the unversioned first protocol
         """
 
         self.token_lifetime = token_lifetime
@@ -63,54 +67,91 @@ class AuthServer(object):
         self.urandom = open("/dev/urandom", "r")
         self.server_name = server_name
         self.now_func = now_func
+        self.lowest_supported_version = lowest_supported_version
 
-    def create_challenge(self, username):
-        """This method creates a challenge suitable for ssh-agent signing."""
+    def create_challenge(self, username, version=0):
+        """This method returns a challenge suitable for ssh-agent signing.
+
+        @param username the username of the user requesting a challenge
+        @param version the highest protocol version the clients supports
+        @exception ProtocolVersionError if the client supports
+        """
         key = self.key_provider.get_key(username)
 
-        c = protocol.Challenge(fingerprint=key.fingerprint(),
-                               server_name=self.server_name,
-                               unique_data=self.urandom.read(20),
-                               valid_from=int(self.now_func() - CLOCK_FUDGE),
-                               valid_to=int(self.now_func() + RESP_TIMEOUT),
-                               username=username)
+        if version < 1:
+            if self.lowest_supported_version > version:
+                raise exceptions.ProtocolVersionError(
+                    "Client needs to support at least version %d"
+                    % self.lowest_supported_version
+                )
 
-        b = c.serialize()
+            c = protocol.Challenge(fingerprint=key.fingerprint(),
+                                   server_name=self.server_name,
+                                   unique_data=self.urandom.read(20),
+                                   valid_from=int(self.now_func() - CLOCK_FUDGE),
+                                   valid_to=int(self.now_func() + RESP_TIMEOUT),
+                                   username=username)
+            b = c.serialize()
 
-        payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
-
-        return ssh.base64url_encode(payload.serialize())
+            payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
+            return ssh.base64url_encode(payload.serialize())
+        else:
+            c = msgpack_protocol.Challenge(
+                fingerprint=key.fingerprint(),
+                server_name=self.server_name,
+                unique_data=self.urandom.read(20),
+                valid_from=int(self.now_func() - CLOCK_FUDGE),
+                valid_to=int(self.now_func() + RESP_TIMEOUT),
+                username=username)
+            return ssh.base64url_encode(c.serialize(self.secret))
 
     def create_token(self, response):
         """
         This method verifies that the response given from the client
         is valid and if so returns a token used for authentication.
         """
-        try:
-            s = ssh.base64url_decode(response)
-        except exceptions.CrtAuthError as why:
-            raise exceptions.InvalidInputException(why)
+        s = ssh.base64url_decode(response)
 
-        r = protocol.Response.deserialize(s)
-
-        if not r.hmac_challenge.verify(self._hmac):
-            s = "Challenge hmac verification failed, not matching our secret"
-            raise exceptions.InvalidInputException(s)
+        if s[0] == 'r':
+            # this is a version 0 response
+            version_1 = False
+            if self.lowest_supported_version > 0:
+                raise exceptions.ProtocolVersionError(
+                    "Client needs to support at least version %d"
+                    % self.lowest_supported_version
+                )
+            r = protocol.Response.deserialize(s)
+            if not r.hmac_challenge.verify(self._hmac):
+                raise exceptions.InvalidInputException(
+                    "Challenge hmac verification failed, not matching  secret"
+                )
+            challenge = protocol.Challenge.deserialize(r.hmac_challenge.payload)
+        elif s[0] == '\x01':
+            # this is a version 1 response
+            version_1 = True
+            r = msgpack_protocol.Response.deserialize(s)
+            challenge = msgpack_protocol.Challenge.deserialize_authenticated(
+                r.challenge, self.secret)
+        else:
+            raise exceptions.ProtocolError("invalid first byte of response")
 
         # verify the integrity of the challenge in the response
-
-        challenge = protocol.Challenge.deserialize(r.hmac_challenge.payload)
-
         if self.server_name != challenge.server_name:
             s = "Got challenge with the wrong server_name encoded"
             raise exceptions.InvalidInputException(s)
 
         key = self.key_provider.get_key(challenge.username)
 
-        if not key.verify_signature(r.signature, r.hmac_challenge.payload):
-            raise exceptions.InvalidInputException("Client did not provide "
-                                                   "proof that it controls "
-                                                   "the secret key")
+        if version_1:
+            if not key.verify_signature(r.signature, r.challenge):
+                raise exceptions.InvalidInputException(
+                    "Client did not provide proof that it controls "
+                    "the secret key")
+        else:
+            if not key.verify_signature(r.signature, r.hmac_challenge.payload):
+                raise exceptions.InvalidInputException(
+                    "Client did not provide proof that it controls "
+                    "the secret key")
 
         if challenge.valid_from > self.now_func():
             s = time.strftime("%Y-%m-%d %H:%M:%S UTC",
@@ -174,22 +215,37 @@ def create_response(challenge, server_name, signer_plug=None):
 
     b = ssh.base64url_decode(challenge)
 
-    hmac_challenge = protocol.VerifiablePayload.deserialize(b)
 
-    challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
+    if b[0] == 'v':
+        # this is version 0 challenge
+        hmac_challenge = protocol.VerifiablePayload.deserialize(b)
+        challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
+        to_sign = hmac_challenge.payload
+        version_1 = False
+    elif b[0] == '\x01':
+        # version 1
+        challenge = msgpack_protocol.Challenge.deserialize(b)
+        to_sign = b
+        version_1 = True
+    else:
+        raise exceptions.ProtocolError("invalid first byte of challenge")
 
     if challenge.server_name != server_name:
         s = ("Possible MITM attack. Challenge originates from '%s' "
              "and not '%s'" % (challenge.server_name, server_name))
         raise exceptions.InvalidInputException(s)
+
     if not signer_plug:
         signer_plug = ssh.AgentSigner()
 
-    signature = signer_plug.sign_challenge(challenge)
+    signature = signer_plug.sign(to_sign, challenge.fingerprint)
 
     signer_plug.close()
 
-    response = protocol.Response(signature=signature,
-                                 hmac_challenge=hmac_challenge)
+    if version_1:
+        response = msgpack_protocol.Response(challenge=b, signature=signature)
+    else:
+        response = protocol.Response(
+            signature=signature, hmac_challenge=hmac_challenge)
 
     return ssh.base64url_encode(response.serialize())

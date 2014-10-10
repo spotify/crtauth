@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2013 Spotify AB
+# Copyright (c) 2011-2014 Spotify AB
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -109,3 +109,10 @@ class MissingKeyException(AuthenticationError):
 class TokenExpiredException(Exception):
     """Thrown if a token older than token_lifetime is provided"""
     pass
+
+
+class ProtocolVersionError(Exception):
+    """
+    Thrown if either the server or the client is proposing a version of
+    the protocol that is too old.
+    """
