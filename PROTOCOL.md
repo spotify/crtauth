@@ -186,7 +186,9 @@ hash algorithm.
 | signature     | bin family | The signature of the payload |
 
 The signature is created using the RSA algorithm as described in RFC3447 using
-SHA256 as hash algorithm.
+SHA1 as hash algorithm. Although it would have been preferable to have a more
+modern hash algorithm, this is chosen because widely distributed ssh-agent
+versions have support for this signature variant built in.
 
 If the client has more than one RSA private key to chose from it MAY use the
 data in the fingerprint field of the challenge to identify the correct key.
