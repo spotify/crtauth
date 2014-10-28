@@ -33,7 +33,7 @@ and uses older versions of various cryptographic methods.
 
 Authentication with the crtauth HTTP protocol is performed over http over
 two requests; the *Challenge Request*  and the *Token Request*.
-
+```
      C                         S
      |                         |
 (1)  | ----------------------> | > Request to protected resource
@@ -58,7 +58,7 @@ two requests; the *Challenge Request*  and the *Token Request*.
      |                         | < or: 401 Unauthorized
 
      figure 1. Protocol Flow
-
+```
 The term CHAP used in the headers is an acronym for Challenge Handshake
 Authentication Protocol.
 
@@ -123,7 +123,7 @@ value for 'r' for Response (0x72) and the ASCII value for 't' (0x74) for Token.
 
 ### Request
 
-A Request message contains the following fields
+A `Request` message contains the following fields
 
 | Field         | Type       | Comment                      |
 | ------------- |------------|------------------------------|
@@ -137,7 +137,7 @@ using the UTF-8 encoding.
 
 ### Challenge
 
-A Challenge message contains the following fields
+A `Challenge` message contains the following fields
 
 | Field         | Type       | Comment                      |
 | ------------- |------------|------------------------------|
@@ -212,23 +212,45 @@ encoded as described in the Messages section above.
 
 The X-CHAP header has a value of the format *method : message*
 
-### X-CHAP: request:<request>
+### X-CHAP: request:`Request`
 
 The request is a message of type request as defined above and provided by
 the client to get a challenge.
 
-### X-CHAP: challenge:<challenge>
+### X-CHAP: challenge:`Challenge`
 
 The challenge message provided by the server as a reply to the request
 message.
 
-### X-CHAP: response:<response>
+### X-CHAP: response:`Response`
 
 The response message provided by the client in the second request.
 
-### X-CHAP: token:<token>
+### X-CHAP: token:`Token`
 
 The token message provided by the server as a reply to the second request.
 
 This is in further client communication supplied in the HTTP _Authorization_
-header in the format *"chap" ":" <token>*.
+header in the format *chap:`Token`* (where "chap:" is literal ASCII)
+
+## Handling future versions of the protocol
+
+Individual messages are all versioned to 1 in messages conforming to this
+specification. Future versions of this protocol MAY send `Request` messages
+with higher version numbers than 1, in which case they MAY add additional data
+to the `Request` after the *user name* field. Those pieces of data is ignored 
+by conforming implementations, which will treat the `Request` message as if
+it was version 1 and ignore any additional data.
+
+Subsequent messages with version values higher than 1 SHOULD be rejected by
+the receiver conforming to this specification. This means that a client that
+conforms to a later version of the protocol needs to keep track of the fact
+that the `Challenge` message sent back as an answer to the `Request` message
+has version set to 1 and emit version 1 messages for the subsequent
+conversation.
+
+If for some reason, a later server chooses to cease support for a certain
+version of the protocol, any messages sent with that version should be responded
+to with an HTTP 400 error. The body of the HTTP messages SHOULD contain a
+text/plain human readable message that the client SHOULD relay to the end user
+informing, for example, of the reason for the refusal.
