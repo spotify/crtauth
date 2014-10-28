@@ -1,6 +1,6 @@
 # The crtauth HTTP authentication protocol
-version 1.0
-by John-John Tedro (udoprog@spotify.com) and Noa Resare (noa@spotify.com)
+#### version 1.0
+#### by John-John Tedro (udoprog@spotify.com) and Noa Resare (noa@spotify.com)
 
 ## Introduction
 
