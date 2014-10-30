@@ -7,17 +7,21 @@ import logging
 log = logging.getLogger('wsgi_crtauth')
 
 
-class CHAPAuthenticationMiddleware:
+class CrtauthMiddleware:
     """
-    Implements the IA CHAP authentication protocol.
+    An instance of this class acts as middleware that will handle crtauth
+    HTTP authentication for connecting clients. Once a user is authenticated,
+    the WSGI environ object will have a value for the key 'crtauth.username'
+    that corresponds to the username of the authenticated user.
 
-    auth_server - Implements the following methods;
-        auth_server.create_challenge(<principal>)
-        auth_server.create_token(<response>)
-        auth_server.validate_token(<token>)
-        
-        Any exception thrown by the auth server will be logged and result in a 
-        "403 Forbidden" response.
+    By default, only properly authenticated requests will reach the wrapped
+    WSGI application. If you want more fine grained control over which
+    resources should be protected, use the manual_authorization constructor
+    parameter which will hand over responsibility for returning the
+    401 Unauthorized HTTP status to the wrapped application.
+
+    Any exception thrown by the auth server will be logged and result in a
+    "403 Forbidden" response.
     """
     CHAP_HEADER = "X-CHAP"
     CHAP_WSGI_HEADER = "HTTP_X_CHAP"
@@ -36,7 +40,23 @@ class CHAPAuthenticationMiddleware:
 
     AUTH_ENVIRON = "wsgi.auth.principal"
 
-    def __init__(self, app, auth_server, disabled=False):
+    def __init__(self, app, auth_server, disabled=False,
+                 manual_authorization=False):
+        """
+        Construct a WSGI middleware that authenticates it's users before
+        passing on requests to the enclosed app.
+
+        :param app: a WSGI application to wrap.
+        :param auth_server: A configured crtauth.server.AuthServer instance.
+        :param disabled: set to true if authentication is disabled.
+        :param manual_authorization: set to true if this middleware should
+         not require the user to be authenticated to pass along the request.
+         In this case the app needs to take care to return status 401 when
+         an unauthorized user attempts to access a protected resource unless
+         the WSGI environ key 'crtauth.username' maps to an acceptable
+         username.
+        """
+
         self.app = app
         self.auth_server = auth_server
         self.disabled = disabled
