@@ -38,7 +38,7 @@ class CrtauthMiddleware:
 
     CHAP_REQUIRE = (CHAP_METHOD, CHAP_PATH)
 
-    AUTH_ENVIRON = "wsgi.auth.principal"
+    AUTH_ENVIRON = "crtauth.username"
 
     def __init__(self, app, auth_server, disabled=False,
                  manual_authorization=False):
@@ -60,8 +60,10 @@ class CrtauthMiddleware:
         self.app = app
         self.auth_server = auth_server
         self.disabled = disabled
+        self.manual_authorization = manual_authorization
 
-    def read_environ(self, environ):
+    @staticmethod
+    def read_environ(environ):
         method = environ.get("REQUEST_METHOD", "GET").upper()
         path = environ.get("PATH_INFO", "/")
         return method, path
@@ -105,18 +107,21 @@ class CrtauthMiddleware:
         return self.handle_authorization(environ, start_response)
 
     def handle_authorization(self, environ, start_response):
+        username = None
         authorization = self.read_authorization(environ)
 
         if authorization and authorization.startswith("chap:"):
             _, token = authorization.split(":", 1)
 
             try:
-                principal = self.auth_server.validate_token(token)
+                username = self.auth_server.validate_token(token)
+                environ.update({self.AUTH_ENVIRON: username})
             except:
                 log.warning("Failed to validate token", exc_info=sys.exc_info())
                 return self.handle_unauthorized(environ, start_response)
 
-            environ.update({self.AUTH_ENVIRON: principal})
+        if not username and not self.manual_authorization:
+            return self.handle_unauthorized(environ, start_response)
 
         return self.app(environ, start_response)
 
