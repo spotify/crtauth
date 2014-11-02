@@ -92,7 +92,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_challenge(self):
         auth_server = server.AuthServer("gurka", DummyKeyProvider(),
-                                        "server_name")
+                                        "server.name")
         s = auth_server.create_challenge("noa")
         cb = ssh.base64url_decode(s)
 
@@ -104,7 +104,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_challenge_v1(self):
         auth_server = server.AuthServer("secret", DummyKeyProvider(),
-                                        "server_name")
+                                        "server.name")
         challenge = auth_server.create_challenge("noa", 1)
         cb = ssh.base64url_decode(challenge)
 
@@ -114,14 +114,14 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_challenge_no_legacy_support(self):
         auth_server = server.AuthServer("secret", DummyKeyProvider(),
-                                        "server_name",
+                                        "server.name",
                                         lowest_supported_version=1)
         self.assertRaises(exceptions.ProtocolVersionError,
                           auth_server.create_challenge, "noa")
 
-    def test_create_challenge_v1(self):
+    def test_create_challenge_v1_another(self):
         auth_server = server.AuthServer("secret", DummyKeyProvider(),
-                                        "server_name",
+                                        "server.name",
                                         lowest_supported_version=1)
         challenge = auth_server.create_challenge("noa", 1)
         cb = ssh.base64url_decode(challenge)
@@ -132,18 +132,18 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip(self):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
-                                        "server_name")
+                                        "server.name")
         challenge = auth_server.create_challenge("test")
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server.create_token(response)
         self.assertTrue(auth_server.validate_token(token))
 
     def test_authentication_roundtrip_v1(self):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
-                                        "server_name")
+                                        "server.name")
         challenge = auth_server.create_challenge("test", 1)
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server.create_token(response)
         self.assertTrue(auth_server.validate_token(token))
@@ -151,10 +151,10 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_mitm1(self):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
-                                        "server_name")
+                                        "server.name")
         challenge = auth_server.create_challenge("test")
         try:
-            create_response(challenge, "another_server",
+            create_response(challenge, "another.server",
                                    ssh.SingleKeySigner(test_priv_key))
             self.fail("Should have gotten InvalidInputException")
         except exceptions.InvalidInputException:
@@ -162,12 +162,12 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_mitm2(self):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name")
+                                          "server.name")
         challenge = auth_server_a.create_challenge("test")
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "another_server")
+                                          "another.server")
         try:
             auth_server_b.create_token(response)
             self.fail("should have thrown exception")
@@ -176,12 +176,12 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_too_new(self):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name")
+                                          "server.name")
         challenge = auth_server_a.create_challenge("test")
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name",
+                                          "server.name",
                                           now_func=lambda: time.time() - 1000)
         try:
             auth_server_b.create_token(response)
@@ -192,12 +192,12 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_too_old(self):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name")
+                                          "server.name")
         challenge = auth_server_a.create_challenge("test")
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name",
+                                          "server.name",
                                           now_func=lambda: time.time() + 1000)
         try:
             auth_server_b.create_token(response)
@@ -208,7 +208,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_invalid_input(self):
         auth_server = server.AuthServer("gurka", DummyKeyProvider(),
-                                        "server_name")
+                                        "server.name")
         for t in ("2tYneWsOm88qu_Trzahw2r6ZLg37oepv03mykGS-HdcnWJLuUMDOmfVI"
                   "Wl5n3U6qt6Fub2E", "random"):
             try:
@@ -219,13 +219,13 @@ class RoundtripTest(unittest.TestCase):
 
     def test_validate_token_too_old(self):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name")
+                                          "server.name")
         challenge = auth_server_a.create_challenge("test")
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name",
+                                          "server.name",
                                           now_func=lambda: time.time() + 1000)
         try:
             auth_server_b.validate_token(token)
@@ -236,13 +236,13 @@ class RoundtripTest(unittest.TestCase):
 
     def test_validate_token_too_new(self):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name")
+                                          "server.name")
         challenge = auth_server_a.create_challenge("test")
-        response = create_response(challenge, "server_name",
+        response = create_response(challenge, "server.name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
-                                          "server_name",
+                                          "server.name",
                                           now_func=lambda: time.time() - 1000)
         try:
             auth_server_b.validate_token(token)
@@ -254,12 +254,12 @@ class RoundtripTest(unittest.TestCase):
     def test_validate_token_wrong_secret(self):
         token = "dgAAAJgtmNoqST9RaxayI7UP5-GLviUDAAAAFHQAAABUJYr_VCWLPQAAAAR0ZXN0"
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
-                                        "server_name",
+                                        "server.name",
                                         now_func=lambda: 1411746561.058992)
         auth_server.validate_token(token)
 
         auth_server = server.AuthServer("wrong_secret", DummyKeyProvider(),
-                                        "server_name",
+                                        "server.name",
                                         now_func=lambda: 1411746561.058992)
         try:
             auth_server.validate_token(token)

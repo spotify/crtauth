@@ -30,7 +30,7 @@ def call_authenticated(url, private_key_filename, version=0):
     token = _authenticate(
         parsed_url.hostname,
         parsed_url.port,
-        "username2",
+        "username",
         private_key_filename,
         version)
 
