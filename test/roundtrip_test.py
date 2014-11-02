@@ -26,6 +26,7 @@ from crtauth import protocol
 from crtauth import ssh
 from crtauth import exceptions
 from crtauth import msgpack_protocol
+from crtauth.client import create_response
 
 inner_s = ("AAAAB3NzaC1yc2EAAAABIwAAAQEArt7xdaxlbzzGlgLhqpLuE5x9d+so0M"
            "JiqQSmiUJojuK+v1cxnYCnQQPF0BkAhw2hiFiDvLLVogIu8m2wCV9XAGxrz38NLHVq"
@@ -133,7 +134,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
                                         "server_name")
         challenge = auth_server.create_challenge("test")
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server.create_token(response)
         self.assertTrue(auth_server.validate_token(token))
@@ -142,7 +143,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
                                         "server_name")
         challenge = auth_server.create_challenge("test", 1)
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server.create_token(response)
         self.assertTrue(auth_server.validate_token(token))
@@ -153,7 +154,7 @@ class RoundtripTest(unittest.TestCase):
                                         "server_name")
         challenge = auth_server.create_challenge("test")
         try:
-            server.create_response(challenge, "another_server",
+            create_response(challenge, "another_server",
                                    ssh.SingleKeySigner(test_priv_key))
             self.fail("Should have gotten InvalidInputException")
         except exceptions.InvalidInputException:
@@ -163,7 +164,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name")
         challenge = auth_server_a.create_challenge("test")
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "another_server")
@@ -177,7 +178,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name")
         challenge = auth_server_a.create_challenge("test")
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name",
@@ -193,7 +194,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name")
         challenge = auth_server_a.create_challenge("test")
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name",
@@ -220,7 +221,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name")
         challenge = auth_server_a.create_challenge("test")
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),
@@ -237,7 +238,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server_name")
         challenge = auth_server_a.create_challenge("test")
-        response = server.create_response(challenge, "server_name",
+        response = create_response(challenge, "server_name",
                                           ssh.SingleKeySigner(test_priv_key))
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer("server_secret", DummyKeyProvider(),

@@ -27,6 +27,7 @@ from crtauth import exceptions
 from crtauth import protocol
 from crtauth import msgpack_protocol
 
+
 # The maximum number of seconds from a challenge is created to the time when
 # the generated response is processed. This needs to compensate for clock
 # skew between servers in a cluster.
@@ -209,43 +210,4 @@ class AuthServer(object):
         return ssh.base64url_encode(payload.serialize())
 
 
-def create_response(challenge, server_name, signer_plug=None):
-    """Called by a client with the challenge provided by the server
-    to generate a response using the local ssh-agent"""
 
-    b = ssh.base64url_decode(challenge)
-
-
-    if b[0] == 'v':
-        # this is version 0 challenge
-        hmac_challenge = protocol.VerifiablePayload.deserialize(b)
-        challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
-        to_sign = hmac_challenge.payload
-        version_1 = False
-    elif b[0] == '\x01':
-        # version 1
-        challenge = msgpack_protocol.Challenge.deserialize(b)
-        to_sign = b
-        version_1 = True
-    else:
-        raise exceptions.ProtocolError("invalid first byte of challenge")
-
-    if challenge.server_name != server_name:
-        s = ("Possible MITM attack. Challenge originates from '%s' "
-             "and not '%s'" % (challenge.server_name, server_name))
-        raise exceptions.InvalidInputException(s)
-
-    if not signer_plug:
-        signer_plug = ssh.AgentSigner()
-
-    signature = signer_plug.sign(to_sign, challenge.fingerprint)
-
-    signer_plug.close()
-
-    if version_1:
-        response = msgpack_protocol.Response(challenge=b, signature=signature)
-    else:
-        response = protocol.Response(
-            signature=signature, hmac_challenge=hmac_challenge)
-
-    return ssh.base64url_encode(response.serialize())

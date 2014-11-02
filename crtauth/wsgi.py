@@ -1,13 +1,29 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) 2013 Spotify AB
-# Author: John-John Tedro <udoprog@spotify.com>
+# Copyright (c) 2013-2014 Spotify AB
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
 import sys
 import logging
+from crtauth import ssh
 
 log = logging.getLogger('wsgi_crtauth')
 
 
-class CrtauthMiddleware:
+class CrtauthMiddleware(object):
     """
     An instance of this class acts as middleware that will handle crtauth
     HTTP authentication for connecting clients. Once a user is authenticated,
@@ -74,7 +90,7 @@ class CrtauthMiddleware:
     def __call__(self, environ, start_response):
         """
         Handle the request and make sure that CHAP authentication stages when the
-        following criterias are met.
+        following criteria are met.
 
         * The request method is of type "HEAD"
         * The request path is /_auth
@@ -151,9 +167,10 @@ class CrtauthMiddleware:
         log.warning("Unknown chap method: " + method)
         return self.handle_auth_server_exception(environ, start_response)
 
-    def handle_request(self, environ, start_response, principal):
+    def handle_request(self, environ, start_response, request):
+        username, version = self.parse_request(request)
         try:
-            challenge = self.auth_server.create_challenge(principal)
+            challenge = self.auth_server.create_challenge(username, version)
         except:
             log.warning("Failed to create challenge", exc_info=sys.exc_info())
             return self.handle_auth_server_exception(environ, start_response)
@@ -182,3 +199,43 @@ class CrtauthMiddleware:
         start_response(self.STATUS_UNAUTHORIZED,
                        [("content-type", "text/plain")])
         return ["Unauthorized"]
+
+    @staticmethod
+    def parse_request(request):
+        """
+        This method contains logic to detect a v1 and beyond request and
+        differentiate it from a version 0 request, which is just an ascii
+        username. While all v1 requests are also valid usernames (the curse
+        and blessing of base64 encoding) it is pretty unlikely that a username
+        happens to also decode to a valid msgpack message with the correct
+        magic values.
+
+        @return a tuple containing username then version
+        """
+        binary = ssh.base64url_decode(request)
+        if len(binary) < 4:
+            return request, 0
+        if ord(binary[0]) > 4 or binary[1] != 'q':
+            # This code handles version values up to 4. Should give plenty
+            # of time to forget all about the unversioned version 0
+            return request, 0
+        b = ord(binary[2])
+        if (b < 0xa1 or b > 0xbf) and b != 0xd9:
+            # third byte does not indicate a string longer than 0 and shorter
+            # than 256 octets long (According to UTF_8 rfc3629, a unicode
+            # char can encode to at most 4 UTF-8 bytes, and username values
+            # in crtauth is limited to 64 characters, thus the max number of
+            # bytes a username can be is 64 * 4 == 256
+            return request, 0
+        if b == 0xd9:
+            username_start = 4
+            username_len = ord(binary[3])
+        else:
+            username_start = 3
+            username_len = ord(binary[2]) & 0x1f
+
+        if len(binary) - username_start < username_len:
+            # decoded string is too short
+            return request, 0
+
+        return binary[username_start:username_start + username_len], 1

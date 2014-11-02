@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014 Spotify AB
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+import urlparse
+import requests
+from crtauth import ssh
+from crtauth import client
+
+
+def call_authenticated(url, private_key_filename, version=0):
+    parsed_url = urlparse.urlparse(url)
+
+    token = _authenticate(
+        parsed_url.hostname,
+        parsed_url.port,
+        "username",
+        private_key_filename,
+        version)
+
+    r = requests.get(url, headers={"Authorization": "chap:%s" % token})
+    print r.text
+
+
+def _authenticate(hostname, port, username, private_key_filename, version):
+    base_url = "http://%s:%d" % (hostname, port)
+
+    with open(private_key_filename) as f:
+        signer = ssh.SingleKeySigner(f.read())
+
+    if version == 0:
+        challenge = _auth_head(base_url, "request:%s" % username)
+    else:
+        challenge = _auth_head(
+            base_url, "request:%s" % client.create_request(username))
+    response = client.create_response(challenge, hostname, signer)
+    return _auth_head(base_url, "response:" + response)
+
+
+def _auth_head(base_url, value):
+    response = requests.head("%s/_auth" % base_url,
+                             headers={"X-CHAP": value})
+    if response.status_code != 200:
+        raise Exception("Authentication request failed with status %d"
+                        % response.status_code)
+    return response.headers["X-CHAP"].split(":")[1]
+
+
+if __name__ == '__main__':
+    call_authenticated("http://localhost:8080/", "id_rsa", 1)
