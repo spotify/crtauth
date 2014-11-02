@@ -177,7 +177,8 @@ traditional binary representation of an RSA key used by ssh-keygen: a simple
 length value encoding with a 4 byte big endian length followed by the value
 as a binary number of first the public exponent followed by the modulus.
 
-The *server name* MUST be 255 characters of length or shorter.
+The *server name* MUST be 255 characters of length or shorter and follow the
+character sets of domain names (characters, numbers, hyphen (-) and dot (.)).
 
 The client MUST verify that the *server name* of the challenge to be signed
 matches the host that it connected to when requesting the challenge, to prevent
