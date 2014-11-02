@@ -45,20 +45,20 @@ def _authenticate(hostname, port, username, private_key_filename, version):
         signer = ssh.SingleKeySigner(f.read())
 
     if version == 0:
-        challenge = _auth_head(base_url, "request:%s" % username)
+        challenge = _auth_get(base_url, "request:%s" % username)
     else:
-        challenge = _auth_head(
+        challenge = _auth_get(
             base_url, "request:%s" % client.create_request(username))
     response = client.create_response(challenge, hostname, signer)
-    return _auth_head(base_url, "response:" + response)
+    return _auth_get(base_url, "response:" + response)
 
 
-def _auth_head(base_url, value):
-    response = requests.head("%s/_auth" % base_url,
-                             headers={"X-CHAP": value})
-    if response.status_code != 200:
-        raise Exception("Authentication request failed with status %d"
-                        % response.status_code)
+def _auth_get(base_url, value):
+    response = requests.get("%s/_auth" % base_url,
+                            headers={"X-CHAP": value})
+    if not response.ok:
+        raise Exception("Authentication request failed with status %d: %s"
+                        % (response.status_code, response.text))
     return response.headers["X-CHAP"].split(":")[1]
 
 

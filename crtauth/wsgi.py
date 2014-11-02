@@ -49,10 +49,7 @@ class CrtauthMiddleware(object):
     STATUS_INTERNAL_SERVER_ERROR = '500 Internal Server Error'
     STATUS_OK = '200 OK'
     
-    CHAP_METHOD = "HEAD"
     CHAP_PATH = "/_auth"
-
-    CHAP_REQUIRE = (CHAP_METHOD, CHAP_PATH)
 
     AUTH_ENVIRON = "crtauth.username"
 
@@ -78,22 +75,13 @@ class CrtauthMiddleware(object):
         self.disabled = disabled
         self.manual_authorization = manual_authorization
 
-    @staticmethod
-    def read_environ(environ):
-        method = environ.get("REQUEST_METHOD", "GET").upper()
-        path = environ.get("PATH_INFO", "/")
-        return method, path
-
     def read_authorization(self, environ):
         return environ.get(self.AUTHORIZATION_HEADER, None)
 
     def __call__(self, environ, start_response):
         """
-        Handle the request and make sure that CHAP authentication stages when the
-        following criteria are met.
-
-        * The request method is of type "HEAD"
-        * The request path is /_auth
+        Handle the request and make sure that CHAP authentication stages for the
+        special path /_auth
 
         Also check for any existing outstanding authentication by reading the
         Authorization header for a token matching "chap:<token>".
@@ -110,9 +98,7 @@ class CrtauthMiddleware(object):
         return self.handle_handshake(environ, start_response)
 
     def handle_handshake(self, environ, start_response):
-        method, path = self.read_environ(environ)
-
-        if (method, path) == self.CHAP_REQUIRE:
+        if environ.get("PATH_INFO", "/") == self.CHAP_PATH:
             try:
                 return self.handshake_path(environ, start_response)
             except:
