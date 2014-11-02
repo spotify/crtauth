@@ -20,7 +20,7 @@ import sys
 import logging
 from crtauth import ssh
 
-log = logging.getLogger('wsgi_crtauth')
+log = logging.getLogger("crtauth.wsgi")
 
 
 class CrtauthMiddleware(object):
@@ -179,7 +179,7 @@ class CrtauthMiddleware(object):
         Raise a "403 Forbidden" error to the client.
         """
         start_response(self.STATUS_FORBIDDEN, [])
-        return []
+        return ["Failed to authenticate user"]
 
     def handle_unauthorized(self, environ, start_response):
         start_response(self.STATUS_UNAUTHORIZED,
