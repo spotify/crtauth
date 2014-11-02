@@ -41,12 +41,12 @@ and uses older versions of various cryptographic methods.
      |                         |
      | <---------------------- | < 401 Unauthorized
      |                         |
-(2)  | ----------------------> | > HEAD: /_auth              (Challenge Request)
+(2)  | ----------------------> | > GET: /_auth              (Challenge Request)
      |                         | > X-CHAP: request:<request>
      |                         |
 (3)  | <---------------------- | < X-CHAP: challenge:<challenge>
      |                         |
-(4)  | ----------------------> | > HEAD: /_auth              (Token Request)
+(4)  | ----------------------> | > GET: /_auth              (Token Request)
      |                         | > X-CHAP: response:<response>
      |                         |
 (5)  | <---------------------- | < X-CHAP: token:<token>
@@ -68,7 +68,7 @@ If a server receives a request for a protected resource with a missing, or
 invalid `Authorization` header it MUST return the HTTP status code
 `401 Unauthorized` as per [RFC2616 section 10.4.2][RFC2616] `(1)`.
 
-This prompts the client to issue an HTTP HEAD request as per
+This prompts the client to issue an HTTP GET request as per
 [RFC2616 section 9.4][RFC2616] using the special request uri `/_auth` with
 an `X-CHAP` header indicating the version of the protocol as well as the
 username of the user that is to be be authenticated `(2)`.
