@@ -33,9 +33,10 @@ class RSAPrivateKey(object):
         """private_key is expected to be in PEM format as described in
         RFC3447 A.1.2. This is what ssh-keygen outputs in the id_rsa output
         file"""
-        bin = base64.b64decode("".join(private_key.split("\n")[1:-1]))
+        private_key = private_key.strip()
+        decoded = base64.b64decode("".join(private_key.split("\n")[1:-1]))
 
-        items = _read_items(bin)
+        items = _read_items(decoded)
 
         self.private_exp = items[3]
         self.mod = items[1]

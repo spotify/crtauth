@@ -20,12 +20,15 @@ from __future__ import with_statement
 
 import hashlib
 import hmac
+import logging
+import re
 import time
 
 from crtauth import ssh
 from crtauth import exceptions
 from crtauth import protocol
 from crtauth import msgpack_protocol
+
 
 # The maximum number of seconds from a challenge is created to the time when
 # the generated response is processed. This needs to compensate for clock
@@ -35,6 +38,8 @@ RESP_TIMEOUT = 20
 # The number of seconds a clock can be off before we start getting too
 # old / too new messages
 CLOCK_FUDGE = 2
+
+log = logging.getLogger("crtauth.server")
 
 
 class AuthServer(object):
@@ -65,6 +70,13 @@ class AuthServer(object):
         self.secret = secret
         self.key_provider = key_provider
         self.urandom = open("/dev/urandom", "r")
+        if not re.match("^[a-zA-Z0-9.-]+$", server_name):
+            raise ValueError(
+                "Invalid server name, can only contain letters, numbers, "
+                "dot (.) and hyphen (-): " + server_name)
+        if len(server_name) > 255:
+            raise ValueError("Too long length of server_name: " +
+                             len(server_name))
         self.server_name = server_name
         self.now_func = now_func
         self.lowest_supported_version = lowest_supported_version
@@ -76,7 +88,15 @@ class AuthServer(object):
         @param version the highest protocol version the clients supports
         @exception ProtocolVersionError if the client supports
         """
-        key = self.key_provider.get_key(username)
+        if len(username) > 64:
+            raise ValueError("Username is too long: " + username)
+
+        try:
+            key = self.key_provider.get_key(username)
+            fingerprint = key.fingerprint()
+        except exceptions.NoSuchUserException:
+            log.info("No public key found for '%s', faking it." % username)
+            fingerprint = self._hmac(username)[:6]
 
         if version < 1:
             if self.lowest_supported_version > version:
@@ -85,7 +105,7 @@ class AuthServer(object):
                     % self.lowest_supported_version
                 )
 
-            c = protocol.Challenge(fingerprint=key.fingerprint(),
+            c = protocol.Challenge(fingerprint=fingerprint,
                                    server_name=self.server_name,
                                    unique_data=self.urandom.read(20),
                                    valid_from=int(self.now_func() - CLOCK_FUDGE),
@@ -97,7 +117,7 @@ class AuthServer(object):
             return ssh.base64url_encode(payload.serialize())
         else:
             c = msgpack_protocol.Challenge(
-                fingerprint=key.fingerprint(),
+                fingerprint=fingerprint,
                 server_name=self.server_name,
                 unique_data=self.urandom.read(20),
                 valid_from=int(self.now_func() - CLOCK_FUDGE),
@@ -207,45 +227,3 @@ class AuthServer(object):
         payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
 
         return ssh.base64url_encode(payload.serialize())
-
-
-def create_response(challenge, server_name, signer_plug=None):
-    """Called by a client with the challenge provided by the server
-    to generate a response using the local ssh-agent"""
-
-    b = ssh.base64url_decode(challenge)
-
-
-    if b[0] == 'v':
-        # this is version 0 challenge
-        hmac_challenge = protocol.VerifiablePayload.deserialize(b)
-        challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
-        to_sign = hmac_challenge.payload
-        version_1 = False
-    elif b[0] == '\x01':
-        # version 1
-        challenge = msgpack_protocol.Challenge.deserialize(b)
-        to_sign = b
-        version_1 = True
-    else:
-        raise exceptions.ProtocolError("invalid first byte of challenge")
-
-    if challenge.server_name != server_name:
-        s = ("Possible MITM attack. Challenge originates from '%s' "
-             "and not '%s'" % (challenge.server_name, server_name))
-        raise exceptions.InvalidInputException(s)
-
-    if not signer_plug:
-        signer_plug = ssh.AgentSigner()
-
-    signature = signer_plug.sign(to_sign, challenge.fingerprint)
-
-    signer_plug.close()
-
-    if version_1:
-        response = msgpack_protocol.Response(challenge=b, signature=signature)
-    else:
-        response = protocol.Response(
-            signature=signature, hmac_challenge=hmac_challenge)
-
-    return ssh.base64url_encode(response.serialize())
