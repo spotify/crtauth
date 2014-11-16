@@ -18,7 +18,7 @@
 # under the License.
 
 # A standalone implementation of RSA signature generation and verification
-# as used in SSH with SHA-1 as hash algorithm, specified in RF3447 section
+# as used in SSH with SHA-1 as hash algorithm, specified in RFC3447 section
 # 8.2.
 
 import base64
