@@ -19,14 +19,13 @@
 
 from distutils.core import setup
 
-VERSION = '0.1.3'
-
 setup(
     name='crtauth',
-    version=VERSION,
+    version='0.99.0',
     description="A public key backed client/server authentication system",
     author='Noa Resare',
     author_email='noa@spotify.com',
     license='Apache-2.0',
-    packages=['crtauth']
+    packages=['crtauth'],
+    install_requires=['msgpack-python']
 )
