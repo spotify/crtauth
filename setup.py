@@ -21,11 +21,11 @@ from distutils.core import setup
 
 setup(
     name='crtauth',
-    version='0.99.0',
+    version='0.99.1',
     description="A public key backed client/server authentication system",
     author='Noa Resare',
     author_email='noa@spotify.com',
     license='Apache-2.0',
     packages=['crtauth'],
-    install_requires=['msgpack-python']
+    install_requires=['msgpack-python>=0.4.0']
 )
