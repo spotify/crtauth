@@ -1,6 +1,12 @@
+crtauth (0.99.2) stable; urgency=medium
+
+  * Restored backward compatibility, create_response now available in server
+
+ -- Noa Resare <noa@spotify.com>  Sun, 17 Dec 2014 09:40:40 +0000
+
 crtauth (0.99.1) stable; urgency=medium
 
-  * Prerelease of the new major version, new protocol etc
+  * Pre-release of the new major version, new protocol etc
 
  -- Noa Resare <noa@spotify.com>  Sun, 30 Nov 2014 04:01:24 +0100
 

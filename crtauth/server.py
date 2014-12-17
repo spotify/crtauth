@@ -29,6 +29,11 @@ from crtauth import exceptions
 from crtauth import protocol
 from crtauth import msgpack_protocol
 
+# Previously, create_response lived in this module. Importing to preserve
+# backward compatibility for now. New users should use the version in
+# the client module.
+# noinspection PyUnresolvedReferences
+from crtauth.client import create_response
 
 # The maximum number of seconds from a challenge is created to the time when
 # the generated response is processed. This needs to compensate for clock

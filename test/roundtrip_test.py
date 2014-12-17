@@ -27,6 +27,7 @@ from crtauth import ssh
 from crtauth import exceptions
 from crtauth import msgpack_protocol
 from crtauth.client import create_response
+from crtauth.server import create_response as server_create_response
 
 inner_s = ("AAAAB3NzaC1yc2EAAAABIwAAAQEArt7xdaxlbzzGlgLhqpLuE5x9d+so0M"
            "JiqQSmiUJojuK+v1cxnYCnQQPF0BkAhw2hiFiDvLLVogIu8m2wCV9XAGxrz38NLHVq"
@@ -272,6 +273,8 @@ class RoundtripTest(unittest.TestCase):
         for i in l:
             self.assertEquals(ssh.base64url_decode(ssh.base64url_encode(i)), i)
 
+    def test_compatibility_create_response(self):
+        self.assertEqual(server_create_response, create_response)
 
 class DummyKeyProvider(key_provider.KeyProvider):
     def get_key(self, username):
