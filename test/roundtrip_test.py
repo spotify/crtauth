@@ -191,6 +191,15 @@ class RoundtripTest(unittest.TestCase):
         except exceptions.InvalidInputException:
             pass
 
+    def test_create_token_invalid_duration(self):
+        auth_server = server.AuthServer("server_secret", DummyKeyProvider(),
+                                        "server.name")
+        token = auth_server._make_token("some_user", int(time.time()) + 3600)
+
+        self.assertRaises(exceptions.InvalidInputException,
+                          auth_server.validate_token, token)
+
+
     def test_create_token_too_old(self):
         auth_server_a = server.AuthServer("server_secret", DummyKeyProvider(),
                                           "server.name")
