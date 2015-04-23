@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2014 Spotify AB
+# Copyright (c) 2011-2015 Spotify AB
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -43,6 +43,11 @@ RESP_TIMEOUT = 20
 # The number of seconds a clock can be off before we start getting too
 # old / too new messages
 CLOCK_FUDGE = 2
+
+# A token has validity encoded in it. Tokens with far too long validity
+# indicates that something is fishy, and we should reject them. This
+# number is the maximum allowed token validity, in seconds.
+MAX_TOKEN_LIFETIME = 600
 
 log = logging.getLogger("crtauth.server")
 
@@ -167,17 +172,6 @@ class AuthServer(object):
 
         key = self.key_provider.get_key(challenge.username)
 
-        if version_1:
-            if not key.verify_signature(r.signature, r.challenge):
-                raise exceptions.InvalidInputException(
-                    "Client did not provide proof that it controls "
-                    "the secret key")
-        else:
-            if not key.verify_signature(r.signature, r.hmac_challenge.payload):
-                raise exceptions.InvalidInputException(
-                    "Client did not provide proof that it controls "
-                    "the secret key")
-
         if challenge.valid_from > self.now_func():
             s = time.strftime("%Y-%m-%d %H:%M:%S UTC",
                               time.gmtime(challenge.valid_from))
@@ -192,6 +186,17 @@ class AuthServer(object):
                                                    "created as %s too old "
                                                    % s)
 
+        if version_1:
+            if not key.verify_signature(r.signature, r.challenge):
+                raise exceptions.InvalidInputException(
+                    "Client did not provide proof that it controls "
+                    "the secret key")
+        else:
+            if not key.verify_signature(r.signature, r.hmac_challenge.payload):
+                raise exceptions.InvalidInputException(
+                    "Client did not provide proof that it controls "
+                    "the secret key")
+
         expire_time = int(self.now_func()) + self.token_lifetime
 
         return self._make_token(challenge.username, expire_time)
@@ -199,11 +204,6 @@ class AuthServer(object):
     def validate_token(self, token):
         buf = ssh.base64url_decode(token)
         hmac_token = protocol.VerifiablePayload.deserialize(buf)
-
-        if not hmac_token.verify(self._hmac):
-            raise exceptions.InvalidInputException("Token hmac verification "
-                                                   "failed, not matching our "
-                                                   "secret")
 
         t = protocol.Token.deserialize(hmac_token.payload)
 
@@ -216,6 +216,14 @@ class AuthServer(object):
             s = time.strftime("%Y-%m-%d %H:%M:%S UTC",
                               time.gmtime(t.valid_from))
             raise exceptions.TokenExpiredException("Token created at %s" % s)
+
+        if (t.valid_to - t.valid_from) > MAX_TOKEN_LIFETIME:
+            raise exceptions.InvalidInputException("Token lifetime too long")
+
+        if not hmac_token.verify(self._hmac):
+            raise exceptions.InvalidInputException("Token hmac verification "
+                                                   "failed, not matching our "
+                                                   "secret")
 
         return t.username
 
