@@ -26,6 +26,7 @@ import hashlib
 import binascii
 
 from crtauth import exceptions
+from crtauth.constant_time_compare import constant_time_compare
 
 
 class RSAPrivateKey(object):
@@ -106,7 +107,7 @@ class RSAPublicKey(object):
                          (self.mod_size - len(decrypted))) + decrypted
         padded_digest = (_make_padding(self.mod_size) +
                          hashlib.sha1(data).digest())
-        return padded_digest == decrypted
+        return constant_time_compare(padded_digest, decrypted)
 
 
 def read_fields(bytes):

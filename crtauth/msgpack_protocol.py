@@ -23,6 +23,7 @@ import io
 import msgpack
 
 from crtauth import exceptions
+from crtauth.constant_time_compare import constant_time_compare
 
 
 PROTOCOL_VERSION = 1
@@ -143,7 +144,7 @@ class AuthenticatedMessage(MessageBase):
         calculated_mac = hmac.new(hmac_secret, serialized[:-HMAC_SIZE-2],
                                   HMAC_HASH_ALGORITHM).digest()
         stored_mac = unpacker.unpack()
-        if calculated_mac != stored_mac:
+        if not constant_time_compare(calculated_mac, stored_mac):
             # TODO better exception, perhaps?
             raise exceptions.BadResponse("Invalid authentication code")
         return instance
