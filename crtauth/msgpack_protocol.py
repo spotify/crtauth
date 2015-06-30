@@ -21,6 +21,7 @@ import hmac
 import io
 
 import msgpack
+import six
 
 from crtauth import exceptions
 from crtauth.constant_time_compare import constant_time_compare
@@ -43,8 +44,13 @@ class TypeInfo(object):
 
     def validate(self, data, name):
         if not isinstance(data, self._data_type):
-            raise ValueError("Value for field %s should have been of %s"
-                             % (name, self._data_type))
+            raise ValueError(
+                "Value for field %s should have been of %s but is %s" % (
+                    name,
+                    self._data_type,
+                    type(data),
+                )
+            )
 
     def pack(self, value, stream):
         stream.write(self._packer.pack(value))
@@ -75,9 +81,11 @@ class MessageBase(object):
             raise RuntimeError(
                 "Serialization can only be performed on classes implementing "
                 "__fields__ and __magic__")
+
         buf = io.BytesIO()
         msgpack.pack(PROTOCOL_VERSION, buf)
         msgpack.pack(self.__magic__, buf)
+
         for name, type_info in self.__fields__:
             value = getattr(self, name)
             type_info.validate(value, name)
@@ -156,10 +164,10 @@ class Challenge(AuthenticatedMessage):
     """
     __magic__ = ord('c')
     __fields__ = (
-        ("unique_data", TypeInfo(str, 20, binary=True)),
+        ("unique_data", TypeInfo(six.binary_type, 20, binary=True)),
         ("valid_from", TypeInfo(int)),
         ("valid_to", TypeInfo(int)),
-        ("fingerprint", TypeInfo(str, 6, binary=True)),
+        ("fingerprint", TypeInfo(six.binary_type, 6, binary=True)),
         ("server_name", TypeInfo(str)),
         ("username", TypeInfo(str))
     )

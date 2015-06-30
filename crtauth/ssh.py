@@ -22,9 +22,13 @@ import sys
 import os
 import socket
 import struct
+import six
 
 from crtauth import exceptions
 from crtauth import rsa
+
+from six.moves import range
+
 
 # ssh-agent communication protocol constants
 SSH2_AGENTC_REQUEST_IDENTITIES = 11
@@ -38,7 +42,7 @@ def base64url_decode(s):
     Decodes a url-safe base64 encoded string.
     """
 
-    if type(s) is unicode:
+    if type(s) is six.text_type:
         s = s.encode("US-ASCII")
 
     if len(s) % 4 == 3:
@@ -52,7 +56,7 @@ def base64url_decode(s):
     except:
         _, e, tb = sys.exc_info()
         raise exceptions.InvalidInputException(
-            "Invalid base64 sequence: %s" % e), None, tb
+            "Invalid base64 sequence: %s" % e)
 
 
 def base64url_encode(data):
@@ -138,7 +142,7 @@ class AgentSigner(SigningPlug):
         assert response_code == SSH2_AGENT_IDENTITIES_ANSWER
         resp = self.sock.recv(length - 5)
         fields = rsa.read_fields(resp)
-        for i in xrange(count):
+        for i in range(count):
             try:
                 key = rsa.RSAPublicKey(fields.next())
             except exceptions.KeyError:

@@ -16,6 +16,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import six
+
+
+def to_i(int_or_single_char_string):
+    if isinstance(int_or_single_char_string, int):
+        return int_or_single_char_string
+    return ord(int_or_single_char_string)
 
 
 def constant_time_compare(x, y):
@@ -24,7 +31,7 @@ def constant_time_compare(x, y):
     regardless of how much alike the input values are, provided that they
     are of the same length.
 
-    Comparisons between user input and secret data such as calculated
+    Comparisons between user input and secret data such as calculatedy
     HMAC values needs to be executed in constant time to avoid leaking
     information to the caller via the timing side channel.
 
@@ -33,8 +40,10 @@ def constant_time_compare(x, y):
         y: the second byte string to compare
     Return: True if x and y are equal, else False
     """
+
     if len(x) != len(y):
         return False
-    n = reduce(lambda a, b: a | b, (ord(x) ^ ord(y) for x, y in zip(x, y)))
-    return n == 0
-
+    result = 0
+    for x, y in zip(x, y):
+        result |= six.byte2int(x) ^ six.byte2int(y)
+    return result == 0

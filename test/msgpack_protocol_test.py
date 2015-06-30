@@ -1,10 +1,11 @@
 import unittest
+import six
 
 from crtauth import msgpack_protocol, exceptions, rsa
 import rsa_test
 
 
-SERIALIZED_CHALLENGE = (
+SERIALIZED_CHALLENGE = six.b(
     '\x01c\xc4\x14uXFO\xd2\xdb\x7f\xfe}\x7f\x93\x91 vh\x89G6\x1f\xc2'
     '\xceQ]\x88\xae\xceQ]\x89\xda\xc4\x06L\x9a\x07\x12\xcb\x1e\xb2se'
     'rver.example.com\xa8username\xc4 \xf7-\xe8\xc8\x1b\xf8\xc5G\xe9'
@@ -12,10 +13,12 @@ SERIALIZED_CHALLENGE = (
 )
 
 CHALLENGE = msgpack_protocol.Challenge(
-    unique_data='uXFO\xd2\xdb\x7f\xfe}\x7f\x93\x91 vh\x89G6\x1f\xc2',
+    unique_data=six.b(
+        'uXFO\xd2\xdb\x7f\xfe}\x7f\x93\x91 vh\x89G6\x1f\xc2'
+    ),
     valid_from=1365084334,
     valid_to=1365084634,
-    fingerprint='L\x9a\x07\x12\xcb\x1e',
+    fingerprint=six.b('L\x9a\x07\x12\xcb\x1e'),
     server_name='server.example.com',
     username='username'
 )
@@ -47,10 +50,11 @@ SERIALIZED_TOKEN = (
 
 class MsgpackTest(unittest.TestCase):
     def test_build_challenge(self):
-        self.assertEqual(CHALLENGE.serialize("secret"), SERIALIZED_CHALLENGE)
+        secret = six.b('secret')
+        self.assertEqual(CHALLENGE.serialize(secret), SERIALIZED_CHALLENGE)
 
         another = msgpack_protocol.Challenge.deserialize_authenticated(
-            SERIALIZED_CHALLENGE, "secret")
+            SERIALIZED_CHALLENGE, six.b("secret"))
         for field in ("unique_data", "valid_from", "valid_to", "fingerprint",
                       "server_name", "username"):
             self.assertEquals(getattr(another, field),

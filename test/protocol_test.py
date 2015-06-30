@@ -19,6 +19,8 @@
 import xdrlib
 from crtauth import protocol
 
+from six.moves import range
+
 
 ref_token = protocol.Token(
     valid_from=1365084334, valid_to=1365084634, username="noa")
@@ -75,7 +77,7 @@ def test_serialize_challenge():
 
 
 def test_serialize_padding():
-    for i in xrange(1, 5):
+    for i in range(1, 5):
         user = "a" * i
         unique_data = '\x859\x9eHK\xc6\x83=\x0c,\xda\xf7K\x8e\xc3\xea}:$\xf8'
         challenge = protocol.Challenge(unique_data=unique_data,
@@ -125,4 +127,3 @@ def test_serialize_response():
          '\x98\x00\x00\x00\x06\xdbe\xa2\xd4\xf9\x10\x00\x00\x00\x00\x00\x0b'
          'server_name\x00\x00\x00\x00\x04test')
     assert protocol.Response.serialize(resp) == s
-
