@@ -18,6 +18,7 @@
 # under the License.
 from __future__ import with_statement
 
+import os
 import hashlib
 import hmac
 import logging
@@ -80,7 +81,6 @@ class AuthServer(object):
         self.token_lifetime = token_lifetime
         self.secret = secret
         self.key_provider = key_provider
-        self.urandom = open("/dev/urandom", "r")
         if not re.match("^[a-zA-Z0-9.-]+$", server_name):
             raise ValueError(
                 "Invalid server name, can only contain letters, numbers, "
@@ -116,12 +116,14 @@ class AuthServer(object):
                     % self.lowest_supported_version
                 )
 
-            c = protocol.Challenge(fingerprint=fingerprint,
-                                   server_name=self.server_name,
-                                   unique_data=self.urandom.read(20),
-                                   valid_from=int(self.now_func() - CLOCK_FUDGE),
-                                   valid_to=int(self.now_func() + RESP_TIMEOUT),
-                                   username=username)
+            c = protocol.Challenge(
+                fingerprint=fingerprint,
+                server_name=self.server_name,
+                unique_data=os.urandom(20),
+                valid_from=int(self.now_func() - CLOCK_FUDGE),
+                valid_to=int(self.now_func() + RESP_TIMEOUT),
+                username=username
+            )
             b = c.serialize()
 
             payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
@@ -130,7 +132,7 @@ class AuthServer(object):
             c = msgpack_protocol.Challenge(
                 fingerprint=fingerprint,
                 server_name=self.server_name,
-                unique_data=self.urandom.read(20),
+                unique_data=os.urandom(20),
                 valid_from=int(self.now_func() - CLOCK_FUDGE),
                 valid_to=int(self.now_func() + RESP_TIMEOUT),
                 username=username)
