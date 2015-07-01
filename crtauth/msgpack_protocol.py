@@ -168,8 +168,8 @@ class Challenge(AuthenticatedMessage):
         ("valid_from", TypeInfo(int)),
         ("valid_to", TypeInfo(int)),
         ("fingerprint", TypeInfo(six.binary_type, 6, binary=True)),
-        ("server_name", TypeInfo(str)),
-        ("username", TypeInfo(str))
+        ("server_name", TypeInfo(six.binary_type)),
+        ("username", TypeInfo(six.binary_type))
     )
 
 
@@ -179,8 +179,8 @@ class Response(Message):
     """
     __magic__ = ord('r')
     __fields__ = (
-        ("challenge", TypeInfo(str, binary=True)),
-        ("signature", TypeInfo(str, binary=True)),
+        ("challenge", TypeInfo(six.binary_type, binary=True)),
+        ("signature", TypeInfo(six.binary_type, binary=True)),
     )
 
 
@@ -192,5 +192,5 @@ class Token(AuthenticatedMessage):
     __fields__ = (
         ("valid_from", TypeInfo(int)),
         ("valid_to", TypeInfo(int)),
-        ("username", TypeInfo(str))
+        ("username", TypeInfo(six.binary_type))
     )
