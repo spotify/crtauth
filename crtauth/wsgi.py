@@ -82,8 +82,8 @@ class CrtauthMiddleware(object):
 
     def __call__(self, environ, start_response):
         """
-        Handle the request and make sure that CHAP authentication stages for the
-        special path /_auth
+        Handle the request and make sure that CHAP authentication stages for
+        the special path /_auth
 
         Also check for any existing outstanding authentication by reading the
         Authorization header for a token matching "chap:<token>".
@@ -104,7 +104,10 @@ class CrtauthMiddleware(object):
             try:
                 return self.handshake_path(environ, start_response)
             except:
-                log.error("Error when handling request", exc_info=sys.exc_info())
+                log.error(
+                    "Error when handling request",
+                    exc_info=sys.exc_info()
+                )
                 start_response(self.STATUS_INTERNAL_SERVER_ERROR, [])
                 return []
 
@@ -121,7 +124,10 @@ class CrtauthMiddleware(object):
                 username = self.auth_server.validate_token(token)
                 environ.update({self.AUTH_ENVIRON: username})
             except:
-                log.warning("Failed to validate token", exc_info=sys.exc_info())
+                log.warning(
+                    "Failed to validate token",
+                    exc_info=sys.exc_info()
+                )
                 return self.handle_unauthorized(environ, start_response)
 
         if not username and not self.manual_authorization:
@@ -135,8 +141,8 @@ class CrtauthMiddleware(object):
 
         Expect that the X-CHAP header is set, otherwise raise 403 Forbidden.
 
-        Perform the required step as specified for the X-CHAP header, or fail with
-        handle_auth_server_exception.
+        Perform the required step as specified for the X-CHAP header, or fail
+        with handle_auth_server_exception.
         """
         chap_header = environ.get(self.CHAP_WSGI_HEADER, None)
 
@@ -163,7 +169,10 @@ class CrtauthMiddleware(object):
             log.warning("Failed to create challenge", exc_info=sys.exc_info())
             return self.handle_auth_server_exception(environ, start_response)
 
-        start_response(self.STATUS_OK, [(self.CHAP_HEADER, "challenge:" + challenge)])
+        start_response(
+            self.STATUS_OK,
+            [(self.CHAP_HEADER, "challenge:" + challenge)]
+        )
         return []
 
     def handle_response(self, environ, start_response, response):

@@ -291,8 +291,9 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_invalid_input(self):
         auth_server = server.AuthServer(
-            six.b("gurka"), DummyKeyProvider(),
-                                        six.b("server.name"))
+            six.b("gurka"),
+            DummyKeyProvider(),
+            six.b("server.name"))
         data = (
             six.b("2tYneWsOm88qu_Trzahw2r6ZLg37oepv03mykGS-HdcnWJLuUMDOmfVI"),
             six.b("Wl5n3U6qt6Fub2E"),

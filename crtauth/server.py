@@ -36,7 +36,7 @@ from crtauth.util import to_i
 # backward compatibility for now. New users should use the version in
 # the client module.
 # noinspection PyUnresolvedReferences
-from crtauth.client import create_response
+from crtauth.client import create_response  # NOQA
 
 # The maximum number of seconds from a challenge is created to the time when
 # the generated response is processed. This needs to compensate for clock
@@ -134,7 +134,10 @@ class AuthServer(object):
             )
             b = c.serialize()
 
-            payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
+            payload = protocol.VerifiablePayload(
+                digest=self._hmac(b),
+                payload=b
+            )
             return ssh.base64url_encode(payload.serialize())
         else:
             c = msgpack_protocol.Challenge(
@@ -167,7 +170,9 @@ class AuthServer(object):
                 raise exceptions.InvalidInputException(
                     "Challenge hmac verification failed, not matching  secret"
                 )
-            challenge = protocol.Challenge.deserialize(r.hmac_challenge.payload)
+            challenge = protocol.Challenge.deserialize(
+                r.hmac_challenge.payload
+            )
         elif start == 1:
             # this is a version 1 response
             version_1 = True

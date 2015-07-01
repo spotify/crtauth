@@ -156,8 +156,8 @@ class AgentSigner(SigningPlug):
 
             if not pub_key:
                 raise exceptions.SshAgentError(
-                    "Your ssh-agent does not have the required key added. This "
-                    "usually indicates that ssh-add has not been run.")
+                    "Your ssh-agent does not have the required key added. "
+                    "This usually indicates that ssh-add has not been run.")
 
             self.sock.send(i2s(len(pub_key) + len(data) + 13) +
                            chr(SSH2_AGENTC_SIGN_REQUEST))
