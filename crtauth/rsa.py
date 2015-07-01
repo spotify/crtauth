@@ -183,12 +183,7 @@ def _str_to_int(data):
     order
     """
 
-    if six.PY3:
-        data = binascii.hexlify(data)
-    else:
-        data = data.encode('hex')
-
-    return int(data, 16)
+    return int(binascii.hexlify(data), 16)
 
 
 def _int_to_str(num):
