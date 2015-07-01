@@ -45,5 +45,5 @@ def constant_time_compare(x, y):
         return False
     result = 0
     for x, y in zip(x, y):
-        result |= six.byte2int(x) ^ six.byte2int(y)
+        result |= to_i(x) ^ to_i(y)
     return result == 0
