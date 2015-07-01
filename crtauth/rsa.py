@@ -27,8 +27,8 @@ import binascii
 import six
 
 from crtauth import exceptions
-from crtauth.constant_time_compare import constant_time_compare
-from crtauth.constant_time_compare import to_i
+from crtauth.util import constant_time_compare
+from crtauth.util import to_i
 
 
 class RSAPrivateKey(object):

@@ -16,7 +16,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import six
 
 
 def to_i(int_or_single_char_string):
@@ -31,7 +30,7 @@ def constant_time_compare(x, y):
     regardless of how much alike the input values are, provided that they
     are of the same length.
 
-    Comparisons between user input and secret data such as calculatedy
+    Comparisons between user input and secret data such as calculated
     HMAC values needs to be executed in constant time to avoid leaking
     information to the caller via the timing side channel.
 

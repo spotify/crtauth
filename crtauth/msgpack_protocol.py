@@ -24,7 +24,7 @@ import msgpack
 import six
 
 from crtauth import exceptions
-from crtauth.constant_time_compare import constant_time_compare
+from crtauth.util import constant_time_compare
 
 
 PROTOCOL_VERSION = 1

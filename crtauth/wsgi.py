@@ -20,7 +20,7 @@ import sys
 import logging
 from crtauth import ssh
 
-from crtauth.constant_time_compare import to_i
+from crtauth.util import to_i
 
 log = logging.getLogger("crtauth.wsgi")
 

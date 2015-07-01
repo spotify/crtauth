@@ -21,7 +21,7 @@ import xdrlib
 import six
 
 from crtauth import exceptions
-from crtauth.constant_time_compare import constant_time_compare
+from crtauth.util import constant_time_compare
 
 # to support another serialization mechanism, replace these with references
 # to other classes that implements the needed methods for all handled data

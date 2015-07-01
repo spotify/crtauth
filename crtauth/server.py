@@ -30,7 +30,7 @@ from crtauth import ssh
 from crtauth import exceptions
 from crtauth import protocol
 from crtauth import msgpack_protocol
-from crtauth.constant_time_compare import to_i
+from crtauth.util import to_i
 
 # Previously, create_response lived in this module. Importing to preserve
 # backward compatibility for now. New users should use the version in

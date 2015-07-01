@@ -19,7 +19,7 @@
 import io
 import msgpack
 from crtauth import ssh, protocol, msgpack_protocol, exceptions
-from crtauth.constant_time_compare import to_i
+from crtauth.util import to_i
 
 
 def create_request(username):
