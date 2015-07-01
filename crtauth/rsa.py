@@ -182,7 +182,13 @@ def _str_to_int(data):
     the octets as an arbitrarily sized unsigned integer in network byte
     order
     """
-    return int(data.encode('hex'), 16)
+
+    if six.PY3:
+        data = binascii.hexlify(data)
+    else:
+        data = data.encode('hex')
+
+    return int(data, 16)
 
 
 def _int_to_str(num):
