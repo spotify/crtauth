@@ -27,8 +27,6 @@ import six
 from crtauth import exceptions
 from crtauth import rsa
 
-from six.moves import range
-
 
 # ssh-agent communication protocol constants
 SSH2_AGENTC_REQUEST_IDENTITIES = 11
