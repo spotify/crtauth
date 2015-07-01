@@ -20,6 +20,8 @@ import sys
 import logging
 from crtauth import ssh
 
+from crtauth.constant_time_compare import to_i
+
 log = logging.getLogger("crtauth.wsgi")
 
 
@@ -48,7 +50,7 @@ class CrtauthMiddleware(object):
     STATUS_FORBIDDEN = '403 Forbidden'
     STATUS_INTERNAL_SERVER_ERROR = '500 Internal Server Error'
     STATUS_OK = '200 OK'
-    
+
     CHAP_PATH = "/_auth"
 
     AUTH_ENVIRON = "crtauth.username"
@@ -198,14 +200,17 @@ class CrtauthMiddleware(object):
 
         @return a tuple containing username then version
         """
+
         binary = ssh.base64url_decode(request)
         if len(binary) < 4:
             return request, 0
-        if ord(binary[0]) > 4 or binary[1] != 'q':
+
+        if to_i(binary[0]) > 4 or to_i(binary[1]) != 113:  # The letter 'q'
             # This code handles version values up to 4. Should give plenty
             # of time to forget all about the unversioned version 0
             return request, 0
-        b = ord(binary[2])
+
+        b = to_i(binary[2])
         if (b < 0xa1 or b > 0xbf) and b != 0xd9:
             # third byte does not indicate a string longer than 0 and shorter
             # than 256 octets long (According to UTF_8 rfc3629, a unicode
@@ -213,12 +218,13 @@ class CrtauthMiddleware(object):
             # in crtauth is limited to 64 characters, thus the max number of
             # bytes a username can be is 64 * 4 == 256
             return request, 0
+
         if b == 0xd9:
             username_start = 4
-            username_len = ord(binary[3])
+            username_len = to_i(binary[3])
         else:
             username_start = 3
-            username_len = ord(binary[2]) & 0x1f
+            username_len = to_i(binary[2]) & 0x1f
 
         if len(binary) - username_start < username_len:
             # decoded string is too short

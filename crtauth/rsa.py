@@ -27,6 +27,7 @@ import binascii
 
 from crtauth import exceptions
 from crtauth.constant_time_compare import constant_time_compare
+from crtauth.constant_time_compare import to_i
 
 
 class RSAPrivateKey(object):
@@ -124,7 +125,7 @@ def s2i(data):
     a big endian 32 bit unsigned integer"""
     num = 0
     for i, val in enumerate(data[:4]):
-        num += ord(val) << ((3 - i) * 8)
+        num += to_i(val) << ((3 - i) * 8)
     return num
 
 
@@ -150,17 +151,17 @@ def _read_items(data):
 
     items = []
     while len(data) > offset:
-        type = ord(data[offset])
+        type = to_i(data[offset])
         offset += 1
         length = 0
-        if ord(data[offset]) & 0x80:
-            len_octets = ord(data[offset]) ^ 0x80
+        if to_i(data[offset]) & 0x80:
+            len_octets = to_i(data[offset]) ^ 0x80
             offset += 1
             for i in range(len_octets):
-                length += ord(data[offset + i]) << (len_octets - i - 1) * 8
+                length += to_i(data[offset + i]) << (len_octets - i - 1) * 8
             offset += len_octets
         else:
-            length = ord(data[offset])
+            length = to_i(data[offset])
             offset += 1
         if type == 0x30:
             return _read_items(data[offset:offset + length])

@@ -28,6 +28,7 @@ from crtauth import ssh
 from crtauth import exceptions
 from crtauth import protocol
 from crtauth import msgpack_protocol
+from crtauth.constant_time_compare import to_i
 
 # Previously, create_response lived in this module. Importing to preserve
 # backward compatibility for now. New users should use the version in
@@ -141,8 +142,9 @@ class AuthServer(object):
         is valid and if so returns a token used for authentication.
         """
         s = ssh.base64url_decode(response)
+        start = to_i(s[0])
 
-        if s[0] == 'r':
+        if start == 114:  # The letter 'r'
             # this is a version 0 response
             version_1 = False
             if self.lowest_supported_version > 0:
@@ -156,7 +158,7 @@ class AuthServer(object):
                     "Challenge hmac verification failed, not matching  secret"
                 )
             challenge = protocol.Challenge.deserialize(r.hmac_challenge.payload)
-        elif s[0] == '\x01':
+        elif start == 1:
             # this is a version 1 response
             version_1 = True
             r = msgpack_protocol.Response.deserialize(s)

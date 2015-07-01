@@ -19,6 +19,7 @@
 import io
 import msgpack
 from crtauth import ssh, protocol, msgpack_protocol, exceptions
+from crtauth.constant_time_compare import to_i
 
 
 def create_request(username):
@@ -39,14 +40,15 @@ def create_response(challenge, server_name, signer_plug=None):
     to generate a response using the local ssh-agent"""
 
     b = ssh.base64url_decode(challenge)
+    start = to_i(b[0])
 
-    if b[0] == 'v':
+    if start == 118:  # the character 'v'
         # this is version 0 challenge
         hmac_challenge = protocol.VerifiablePayload.deserialize(b)
         challenge = protocol.Challenge.deserialize(hmac_challenge.payload)
         to_sign = hmac_challenge.payload
         version_1 = False
-    elif b[0] == '\x01':
+    elif start == 1:
         # version 1
         challenge = msgpack_protocol.Challenge.deserialize(b)
         to_sign = b
