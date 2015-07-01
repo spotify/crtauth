@@ -144,11 +144,11 @@ class AgentSigner(SigningPlug):
         fields = rsa.read_fields(resp)
         for i in range(count):
             try:
-                key = rsa.RSAPublicKey(fields.next())
+                key = rsa.RSAPublicKey(next(fields))
             except exceptions.KeyError:
-                fields.next()
+                next(fields)
                 continue
-            fields.next()  # ignore filename for key
+            next(fields)  # ignore filename for key
             if key.fingerprint() == key_fingerprint:
                 return key
 
@@ -171,9 +171,9 @@ class AgentSigner(SigningPlug):
             assert response_code == SSH2_AGENT_SIGN_RESPONSE
             buf = self.sock.recv(length - 5)
             fields = rsa.read_fields(buf)
-            response_type = fields.next()
+            response_type = next(fields)
             assert response_type == "ssh-rsa"
-            return fields.next()
+            return next(fields)
         except socket.timeout as why:
             raise exceptions.SshAgentError(why)
 
