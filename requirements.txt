@@ -1,1 +1,2 @@
-msgpack-python==0.4.2
+# This makes the file just use whatever is inside setup.py
+-e .
