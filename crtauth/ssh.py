@@ -46,9 +46,9 @@ def base64url_decode(s):
         s = s.encode("US-ASCII")
 
     if len(s) % 4 == 3:
-        s += "="
+        s += six.b("=")
     elif len(s) % 4 == 2:
-        s += "=="
+        s += six.b("==")
 
     # b64decode is real crap when checking for the validity of the input.
     try:
@@ -64,8 +64,8 @@ def base64url_encode(data):
     encodes a url-safe base64 encoded string.
     """
 
-    s = base64.b64encode(data, "-_")
-    return s.rstrip("=")
+    s = base64.b64encode(data, six.b("-_"))
+    return s.rstrip(six.b("="))
 
 
 def i2s(i):

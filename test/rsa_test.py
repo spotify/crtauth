@@ -19,7 +19,10 @@
 from unittest import TestCase
 from crtauth import rsa
 
-private_key = """-----BEGIN RSA PRIVATE KEY-----
+import six
+
+private_key = six.b(
+    """-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAytMDYYBpRWXwaEQUvjPMBqMjjlbp2GI3mqEVyhSn4cdvPGSK
 PO1jHzeouSp1Ex9wP5mJVZyuG4XIUunVBYrGl3FEbxYGOOqVEhri02cU3vWpyCEf
 4k/lfvDEQx1330RjgixEFJdJXmE4bdHXO68WluNnfN8gu7rgiEm4FqjgDbzJGWKm
@@ -46,14 +49,17 @@ A2rtAoGAMv92fqI+B5taxlZhTLAIaGVFbzoASHTRl3eQJbc4zc38U3Zbiy4deMEH
 3QTXq7nxWpE4YwHbgXAeJUGfUpE+nEZGMolj1Q0ueKuSstQg5p1nwhQIxej8EJW+
 7siqmOTZDKzieik7KVzaJ/U02Q186smezKIuAOYtT8VCf9UksJ4=
 -----END RSA PRIVATE KEY-----"""
+)
 
-public_key = ("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDK0wNhgGlFZf"
-              "BoRBS+M8wGoyOOVunYYjeaoRXKFKfhx288ZIo87WMfN6i5KnUTH3A/mYlVnK4bh"
-              "chS6dUFisaXcURvFgY46pUSGuLTZxTe9anIIR/iT+V+8MRDHXffRGOCLEQUl0le"
-              "YTht0dc7rxaW42d83yC7uuCISbgWqOANvMkZYqZjaejOOGVpkApxLGG8K8RvNBB"
-              "M8TYqE3DQHSyRVU6S9HWLbWF+i8W2h4CLX2Quodf0c1dcqlftClHjdIyed/zQKh"
-              "Ao+FDcJrN+2ZDJ0mkYLVlJDZuLk/K/vSOwD3wXhby3cdHCsxnRfy2Ylnt31VF0a"
-              "VtlhW4IJ+5mMzmz noa@date.office.spotify.net")
+public_key = six.b(
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDK0wNhgGlFZf"
+    "BoRBS+M8wGoyOOVunYYjeaoRXKFKfhx288ZIo87WMfN6i5KnUTH3A/mYlVnK4bh"
+    "chS6dUFisaXcURvFgY46pUSGuLTZxTe9anIIR/iT+V+8MRDHXffRGOCLEQUl0le"
+    "YTht0dc7rxaW42d83yC7uuCISbgWqOANvMkZYqZjaejOOGVpkApxLGG8K8RvNBB"
+    "M8TYqE3DQHSyRVU6S9HWLbWF+i8W2h4CLX2Quodf0c1dcqlftClHjdIyed/zQKh"
+    "Ao+FDcJrN+2ZDJ0mkYLVlJDZuLk/K/vSOwD3wXhby3cdHCsxnRfy2Ylnt31VF0a"
+    "VtlhW4IJ+5mMzmz noa@date.office.spotify.net"
+)
 
 
 class RSASignerTest(TestCase):
@@ -63,7 +69,7 @@ class RSASignerTest(TestCase):
         self.public_key = rsa.RSAPublicKey(public_key)
 
     def test_encryption_round_trip(self):
-        for clear_text in ["sweden", "singer"]:
+        for clear_text in [six.b("sweden"), six.b("singer")]:
             encrypted = self.private_key.encrypt(clear_text)
             self.assertNotEqual(clear_text, encrypted)
 
@@ -71,7 +77,9 @@ class RSASignerTest(TestCase):
             self.assertEquals(clear_text, decrypted)
 
     def test_sign_verify(self):
-        message = "foo"
+        message = six.b("foo")
         signature = self.private_key.sign(message)
         self.assertTrue(self.public_key.verify_signature(signature, message))
-        self.assertFalse(self.public_key.verify_signature(signature, "test"))
+        self.assertFalse(
+            self.public_key.verify_signature(signature, six.b("test"))
+        )

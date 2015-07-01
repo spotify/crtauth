@@ -24,6 +24,7 @@
 import base64
 import hashlib
 import binascii
+import six
 
 from crtauth import exceptions
 from crtauth.constant_time_compare import constant_time_compare
@@ -36,7 +37,9 @@ class RSAPrivateKey(object):
         RFC3447 A.1.2. This is what ssh-keygen outputs in the id_rsa output
         file"""
         private_key = private_key.strip()
-        decoded = base64.b64decode("".join(private_key.split("\n")[1:-1]))
+        decoded = base64.b64decode(
+            six.b("").join(private_key.split(six.b("\n"))[1:-1])
+        )
 
         items = _read_items(decoded)
 
@@ -64,8 +67,8 @@ class RSAPublicKey(object):
 
     def __init__(self, key):
         """@param key the ASCII string from id_rsa.pub from ssh-keygen"""
-        if key.startswith("ssh-rsa"):
-            self.decoded = key.split(" ")[1]
+        if key.startswith(six.b("ssh-rsa")):
+            self.decoded = key.split((six.b(" ")))[1]
             self.encoded = base64.b64decode(self.decoded)
         else:
             self.encoded = key
@@ -74,13 +77,14 @@ class RSAPublicKey(object):
         self.fp = hashlib.sha1(self.encoded).digest()[:6]
 
         fields = read_fields(self.encoded)
-        sigtype = fields.next()
-        if sigtype != "ssh-rsa":
+        sigtype = next(fields)
+
+        if sigtype != six.b("ssh-rsa"):
             raise exceptions.KeyError("Unknown key type %s. This code "
                                       "currently only supports ssh-rsa" %
                                       sigtype)
-        self.exp = _str_to_int(fields.next())
-        self.mod = _str_to_int(fields.next())
+        self.exp = _str_to_int(next(fields))
+        self.mod = _str_to_int(next(fields))
         # it turns out that ssh writes leading zeroes, which we get rid of
         # by roundtripping to bignum.
         self.mod_size = len(_int_to_str(self.mod))
@@ -104,8 +108,8 @@ class RSAPublicKey(object):
         # compare.
         decrypted = self.decrypt(signature)
         if len(decrypted) < self.mod_size:
-            decrypted = ("\x00" *
-                         (self.mod_size - len(decrypted))) + decrypted
+            decrypted = (six.b("\x00" *
+                               (self.mod_size - len(decrypted)))) + decrypted
         padded_digest = (_make_padding(self.mod_size) +
                          hashlib.sha1(data).digest())
         return constant_time_compare(padded_digest, decrypted)
@@ -139,7 +143,7 @@ def _make_padding(mod_length):
     # Constant for SHA-1 taken from RFC3447 page 42 note 1
     PS = "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"
     all_ff = "\xff" * (mod_length - len(PS) - 23)
-    return "\x00\x01" + all_ff + "\x00" + PS
+    return six.b("\x00\x01" + all_ff + "\x00" + PS)
 
 
 def _read_items(data):

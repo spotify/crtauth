@@ -19,11 +19,11 @@ CHALLENGE = msgpack_protocol.Challenge(
     valid_from=1365084334,
     valid_to=1365084634,
     fingerprint=six.b('L\x9a\x07\x12\xcb\x1e'),
-    server_name='server.example.com',
-    username='username'
+    server_name=six.b('server.example.com'),
+    username=six.b('username')
 )
 
-SERIALIZED_RESPONSE = (
+SERIALIZED_RESPONSE = six.b(
     '\x01r\xc4h\x01c\xc4\x14uXFO\xd2\xdb\x7f\xfe}\x7f\x93\x91 vh\x89'
     'G6\x1f\xc2\xceQ]\x88\xae\xceQ]\x89\xda\xc4\x06L\x9a\x07\x12\xcb'
     '\x1e\xb2server.example.com\xa8username\xc4 \xf7-\xe8\xc8\x1b\xf8'
@@ -42,7 +42,7 @@ SERIALIZED_RESPONSE = (
     'D5j\xcc\xb4\xb7"y\r\xc0\xb6\x8c\xa846\xd6Y!\xd5\x86'
 )
 
-SERIALIZED_TOKEN = (
+SERIALIZED_TOKEN = six.b(
     '\x01t\xceQ]\x88\xae\xceQ]\x89\xda\xa3noa\xc4 )YT\xc9\x99\xdeI\xc4'
     '\xb9\xed|$\xda\xcc\xaf/A\x93B\x15t\x14_\\\x89d\x19b[\x8d\xe2o'
 )
@@ -66,10 +66,10 @@ class MsgpackTest(unittest.TestCase):
             valid_from=1365084334,
             valid_to=1365084634,
             fingerprint='L\x9a\x07\x12\xcb\x1e',
-            server_name='server.example.com',
+            server_name=six.b('server.example.com'),
             username='username'
         )
-        self.assertRaises(ValueError, challenge.serialize, "secret")
+        self.assertRaises(ValueError, challenge.serialize, six.b("secret"))
 
     def test_wrong_number_of_parameters(self):
         self.assertRaises(RuntimeError, msgpack_protocol.Challenge)
@@ -87,17 +87,17 @@ class MsgpackTest(unittest.TestCase):
 
     def test_wrong_version(self):
         try:
-            msgpack_protocol.Challenge.deserialize("foo")
+            msgpack_protocol.Challenge.deserialize(six.b("foo"))
             self.fail("Should have thrown wrong version exception")
         except exceptions.ProtocolError as e:
-            self._starts_with(e.message, "Wrong version")
+            self._starts_with(e.args[0], "Wrong version")
 
     def test_wrong_magic(self):
         try:
-            msgpack_protocol.Challenge.deserialize("\x01f")
+            msgpack_protocol.Challenge.deserialize(six.b("\x01f"))
             self.fail("Should have thrown wrong magic exception")
         except exceptions.ProtocolError as e:
-            self._starts_with(e.message, "Wrong magic")
+            self._starts_with(e.args[0], "Wrong magic")
 
     def test_serialize_response(self):
         key = rsa.RSAPrivateKey(rsa_test.private_key)
@@ -114,34 +114,35 @@ class MsgpackTest(unittest.TestCase):
 
     def test_serialize_token(self):
         r = msgpack_protocol.Token(valid_from=1365084334, valid_to=1365084634,
-                                   username='noa')
+                                   username=six.b('noa'))
 
-        self.assertEquals(SERIALIZED_TOKEN, r.serialize('gurkburk'))
+        inp = six.b('gurkburk')
+        self.assertEquals(SERIALIZED_TOKEN, r.serialize(inp))
 
     def test_deserialize_token(self):
-        t = msgpack_protocol.Token.deserialize_authenticated(SERIALIZED_TOKEN,
-                                                             'gurkburk')
-        self.assertEquals("noa", t.username)
+        t = msgpack_protocol.Token.deserialize_authenticated(
+            SERIALIZED_TOKEN,
+            six.b('gurkburk')
+        )
+
+        self.assertEquals(six.b("noa"), t.username)
         self.assertEquals(1365084334, t.valid_from)
         self.assertEquals(1365084634, t.valid_to)
 
     def test_deserialize_token_wrong_secret(self):
         self.assertRaises(exceptions.BadResponse,
                           msgpack_protocol.Token.deserialize_authenticated,
-                          SERIALIZED_TOKEN, 'wrong')
+                          SERIALIZED_TOKEN, six.b('wrong'))
 
     def test_deserialize_tampered_message(self):
         # identical with SERIALIZED_TOKEN except o -> 0 in the username field
-        t = (
+        t = six.b(
             '\x01t\xceQ]\x88\xae\xceQ]\x89\xda\xa3n0a\xc4 )YT\xc9\x99\xdeI\xc4'
             '\xb9\xed|$\xda\xcc\xaf/A\x93B\x15t\x14_\\\x89d\x19b[\x8d\xe2o'
         )
         self.assertRaises(exceptions.BadResponse,
                           msgpack_protocol.Token.deserialize_authenticated,
-                          t, 'gurkburk')
-
-
-
+                          t, six.b('gurkburk'))
 
     def _starts_with(self, message, prefix):
         if not message.startswith(prefix):
