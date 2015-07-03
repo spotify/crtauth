@@ -24,7 +24,6 @@ import hmac
 import logging
 import re
 import time
-import six
 
 from crtauth import ssh
 from crtauth import exceptions
@@ -84,18 +83,14 @@ class AuthServer(object):
         self.key_provider = key_provider
 
         self.server_name = server_name
-        server_string = server_name
-        if six.PY3:
-            server_string = server_name.decode('utf-8')
-
-        if not re.match("^[a-zA-Z0-9.-]+$", server_string):
+        if not re.match("^[a-zA-Z0-9.-]+$", self.server_name):
             raise ValueError(
                 "Invalid server name, can only contain letters, numbers, "
-                "dot (.) and hyphen (-): " + server_string)
+                "dot (.) and hyphen (-): " + self.server_name)
 
-        if len(server_string) > 255:
+        if len(self.server_name) > 255:
             raise ValueError("Too long length of server_name: " +
-                             len(server_string))
+                             len(self.server_name))
 
         self.now_func = now_func
         self.lowest_supported_version = lowest_supported_version
