@@ -168,8 +168,8 @@ class Challenge(AuthenticatedMessage):
         ("valid_from", TypeInfo(int)),
         ("valid_to", TypeInfo(int)),
         ("fingerprint", TypeInfo(six.binary_type, 6, binary=True)),
-        ("server_name", TypeInfo(six.binary_type)),
-        ("username", TypeInfo(six.binary_type))
+        ("server_name", TypeInfo(str)),
+        ("username", TypeInfo(str))
     )
 
 
@@ -192,5 +192,5 @@ class Token(AuthenticatedMessage):
     __fields__ = (
         ("valid_from", TypeInfo(int)),
         ("valid_to", TypeInfo(int)),
-        ("username", TypeInfo(six.binary_type))
+        ("username", TypeInfo(str))
     )
