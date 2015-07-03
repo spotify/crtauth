@@ -103,7 +103,8 @@ class HybridKeyProvider(key_provider.KeyProvider):
     users.
     """
 
-    def __init__(self, dir, uri, auth_user, auth_password, base_dn, group=None):
+    def __init__(self, dir, uri, auth_user, auth_password, base_dn,
+                 group=None):
         """
         Constructs a FileKeyProvider based on the directory dir, and a
         LDAPKeyProvider based on the remaining arguments.
@@ -122,7 +123,7 @@ class HybridKeyProvider(key_provider.KeyProvider):
         except exceptions.NoSuchUserException:
             try:
                 return self.file_key_provider.get_key(username)
-            except Exception, e:
+            except Exception as e:
                 raise exceptions.NoSuchUserException(
                     "User %s not in ldap, defaulted to pubkey dir and got "
                     "exception %s" % (username, e))
