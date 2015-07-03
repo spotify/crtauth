@@ -20,7 +20,6 @@ import xdrlib
 from crtauth import protocol
 
 
-
 ref_token = protocol.Token(
     valid_from=1365084334,
     valid_to=1365084634,
