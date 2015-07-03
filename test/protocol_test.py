@@ -58,7 +58,7 @@ def test_serialize_token_binary():
     assert buf == b"t\x00\x00\x00Q]\x88\xaeQ]\x89\xda\x00\x00\x00\x03noa\x00"
 
 
-def test_deserialize_token_________rename_me():
+def test_deserialize_token_binary():
     buf = b"t\x00\x00\x00Q]\x8b\x17Q]\x8bU\x00\x00\x00\x04test"
     token = protocol.Token.deserialize(buf)
     assert token.username == b'test'
