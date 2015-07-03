@@ -73,12 +73,36 @@ class RSAPublicKey(object):
 
     def __init__(self, key):
         """@param key the ASCII string from id_rsa.pub from ssh-keygen"""
-        if key.startswith(six.b("ssh-rsa")):
-            self.decoded = key.split((six.b(" ")))[1]
-            self.encoded = base64.b64decode(self.decoded)
+
+        # FIXME thiderman: So, this is not nice for very many reasons.
+        # If in Python 3, the binary key will be b64-encoded bytes and the
+        # plain text key will be a unicode string. Beacuse of this, we can't
+        # do the key.startswith() check since the bytes would crash on that.
+        # We also cannot do a startswith with bytes since the unicode string
+        # would fail that.
+        if six.PY3:
+            # As such, we try to first see if we can just b64 the string.
+            # If that works, just roll with it.
+            try:
+                self.encoded = key
+                self.decoded = base64.b64encode(self.encoded)
+            except TypeError:
+                # If the string dies on b64, we assume it is a unicode lateral
+                # and splits it accordingly.
+                self.decoded = key.split(" ")[1]
+                self.encoded = base64.b64decode(self.decoded)
+
+        # The above does _not_ work for Python 2 because when the above is
+        # used read_fields() will for reasons unknown not return the same
+        # values as the code below would do. After wrangling with that for long
+        # enough, I admitted defeat and just did this instead.
         else:
-            self.encoded = key
-            self.decoded = base64.b64encode(self.encoded)
+            if key.startswith("ssh-rsa"):
+                self.decoded = key.split(" ")[1]
+                self.encoded = base64.b64decode(self.decoded)
+            else:
+                self.encoded = key
+                self.decoded = base64.b64encode(self.encoded)
 
         self.fp = hashlib.sha1(self.encoded).digest()[:6]
 
