@@ -19,41 +19,37 @@
 import unittest
 from crtauth import wsgi
 
-import six
-
 
 class WsgiTest(unittest.TestCase):
     def test_parse_request(self):
         # trigger short request
-        _check_req_v0(six.b("noa"))
+        _check_req_v0(b"noa")
 
         # trigger first byte is > 0x03
-        _check_req_v0(six.b("BXGjYWJj"))
+        _check_req_v0(b"BXGjYWJj")
 
         # second byte is not 'q'
-        _check_req_v0(six.b("AXOjYWJj"))
+        _check_req_v0(b"AXOjYWJj")
 
         # zero length username
-        _check_req_v0(six.b("AXOg"))
+        _check_req_v0(b"AXOg")
 
         # third byte is something completely else
-        _check_req_v0(six.b("AXHcYWJj"))
+        _check_req_v0(b"AXHcYWJj")
 
         # string length too long (str 16)
-        _check_req_v0(six.b("AXHaYWJj"))
+        _check_req_v0(b"AXHaYWJj")
 
         # string length longer than available bytes
-        _check_req_v0(six.b("AXGjYWI"))
+        _check_req_v0(b"AXGjYWI")
 
         # string length longer than available bytes (also longer than 31)
-        _check_req_v0(six.b("AXHZYWJj"))
+        _check_req_v0(b"AXHZYWJj")
 
         # a valid v1 'abc' username
 
-        username, version = wsgi.CrtauthMiddleware.parse_request(
-            six.b("AXGjYWJj")
-        )
-        assert username == six.b("abc")
+        username, version = wsgi.CrtauthMiddleware.parse_request(b"AXGjYWJj")
+        assert username == b"abc"
         assert version == 1
 
 

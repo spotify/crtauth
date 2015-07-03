@@ -19,7 +19,6 @@
 
 import unittest
 import time
-import six
 
 from crtauth import server
 from crtauth import key_provider
@@ -40,9 +39,9 @@ inner_s = (
     "JSkkfxc9HFPo0t+deDorZmelNNFvEn5KeqP0HJvw/jm2U1PQ=="
 )
 
-s = six.b("ssh-rsa %s noa@vader.local" % inner_s)
+s = "ssh-rsa %s noa@vader.local" % inner_s
 
-t_pubkey = six.b(
+t_pubkey = (
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDK0wNhgGlFZf"
     "BoRBS+M8wGoyOOVunYYjeaoRXKFKfhx288ZIo87WMfN6i5KnUTH3A/mYlVnK4bh"
     "chS6dUFisaXcURvFgY46pUSGuLTZxTe9anIIR/iT+V+8MRDHXffRGOCLEQUl0le"
@@ -52,7 +51,7 @@ t_pubkey = six.b(
     "VtlhW4IJ+5mMzmz noa@date.office.spotify.net"
 )
 
-test_priv_key = six.b("""-----BEGIN RSA PRIVATE KEY-----
+test_priv_key = ("""-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAytMDYYBpRWXwaEQUvjPMBqMjjlbp2GI3mqEVyhSn4cdvPGSK
 PO1jHzeouSp1Ex9wP5mJVZyuG4XIUunVBYrGl3FEbxYGOOqVEhri02cU3vWpyCEf
 4k/lfvDEQx1330RjgixEFJdJXmE4bdHXO68WluNnfN8gu7rgiEm4FqjgDbzJGWKm
@@ -85,80 +84,79 @@ class RoundtripTest(unittest.TestCase):
 
     def test_read_base64_key(self):
         key = rsa.RSAPublicKey(s)
-        self.assertEqual(key.fingerprint(), six.b("\xfb\xa1\xeao\xd3y"))
-        self.assertEqual(key.decoded, six.b(inner_s))
+        self.assertEqual(key.fingerprint(), b"\xfb\xa1\xeao\xd3y")
+        self.assertEqual(key.decoded, inner_s)
         self.assertEqual(
             key.encoded[:15],
-            six.b("\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x01")
+            b"\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x01"
         )
 
     def test_read_binary_key(self):
-        key = rsa.RSAPublicKey(ssh.base64url_decode(
-            s.split(six.b(" "))[1])
-        )
-        self.assertEqual(key.fingerprint(), six.b("\xfb\xa1\xeao\xd3y"))
-        self.assertEqual(key.decoded, six.b(inner_s))
+        data = ssh.base64url_decode(inner_s)
+        key = rsa.RSAPublicKey(data)
+        self.assertEqual(key.fingerprint(), b"\xfb\xa1\xeao\xd3y")
+        self.assertEqual(key.decoded, inner_s.encode('utf-8'))
         self.assertEqual(
             key.encoded[:15],
-            six.b("\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x01")
+            b"\x00\x00\x00\x07ssh-rsa\x00\x00\x00\x01"
         )
 
     def test_create_challenge(self):
-        auth_server = server.AuthServer(six.b("gurka"), DummyKeyProvider(),
-                                        six.b("server.name"))
-        s = auth_server.create_challenge(six.b("noa"))
+        auth_server = server.AuthServer(b"gurka", DummyKeyProvider(),
+                                        "server.name")
+        s = auth_server.create_challenge('noa')
         cb = ssh.base64url_decode(s)
 
         verifiable_payload = protocol.VerifiablePayload.deserialize(cb)
 
         challenge = protocol.Challenge.deserialize(verifiable_payload.payload)
 
-        self.assertEquals(six.b("\xfb\xa1\xeao\xd3y"), challenge.fingerprint)
+        self.assertEquals(b"\xfb\xa1\xeao\xd3y", challenge.fingerprint)
 
     def test_create_challenge_v1(self):
-        auth_server = server.AuthServer(six.b("secret"), DummyKeyProvider(),
-                                        six.b("server.name"))
-        challenge = auth_server.create_challenge(six.b("noa"), 1)
+        auth_server = server.AuthServer(b"secret", DummyKeyProvider(),
+                                        "server.name")
+        challenge = auth_server.create_challenge('noa', 1)
         cb = ssh.base64url_decode(challenge)
 
         decoded_challenge = msgpack_protocol.Challenge.deserialize(cb)
 
         self.assertEquals(
-            six.b("\xfb\xa1\xeao\xd3y"),
+            b"\xfb\xa1\xeao\xd3y",
             decoded_challenge.fingerprint
         )
 
     def test_create_challenge_no_legacy_support(self):
-        auth_server = server.AuthServer(six.b("secret"), DummyKeyProvider(),
-                                        six.b("server.name"),
+        auth_server = server.AuthServer(b"secret", DummyKeyProvider(),
+                                        "server.name",
                                         lowest_supported_version=1)
         self.assertRaises(exceptions.ProtocolVersionError,
-                          auth_server.create_challenge, six.b("noa"))
+                          auth_server.create_challenge, 'noa')
 
     def test_create_challenge_v1_another(self):
-        auth_server = server.AuthServer(six.b("secret"), DummyKeyProvider(),
-                                        six.b("server.name"),
+        auth_server = server.AuthServer(b"secret", DummyKeyProvider(),
+                                        "server.name",
                                         lowest_supported_version=1)
-        challenge = auth_server.create_challenge(six.b("noa"), 1)
+        challenge = auth_server.create_challenge('noa', 1)
         cb = ssh.base64url_decode(challenge)
 
         decoded_challenge = msgpack_protocol.Challenge.deserialize(cb)
 
         self.assertEquals(
-            six.b("\xfb\xa1\xeao\xd3y"),
+            b"\xfb\xa1\xeao\xd3y",
             decoded_challenge.fingerprint
         )
 
     def test_authentication_roundtrip(self):
         auth_server = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
         )
-        challenge = auth_server.create_challenge(six.b("test"))
+        challenge = auth_server.create_challenge('test')
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         token = auth_server.create_token(response)
@@ -166,14 +164,14 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_v1(self):
         auth_server = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name"
         )
-        challenge = auth_server.create_challenge(six.b("test"), 1)
+        challenge = auth_server.create_challenge('test', 1)
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         token = auth_server.create_token(response)
@@ -181,15 +179,15 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_mitm1(self):
         auth_server = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name",
         )
-        challenge = auth_server.create_challenge(six.b("test"))
+        challenge = auth_server.create_challenge('test')
         try:
             create_response(
                 challenge,
-                six.b("another.server"),
+                "another.server",
                 ssh.SingleKeySigner(test_priv_key)
             )
             self.fail("Should have gotten InvalidInputException")
@@ -198,20 +196,20 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_mitm2(self):
         auth_server_a = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name",
         )
-        challenge = auth_server_a.create_challenge(six.b("test"))
+        challenge = auth_server_a.create_challenge('test')
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         auth_server_b = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("another.server")
+            "another.server",
         )
         try:
             auth_server_b.create_token(response)
@@ -221,20 +219,20 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_too_new(self):
         auth_server_a = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name"
         )
-        challenge = auth_server_a.create_challenge(six.b("test"))
+        challenge = auth_server_a.create_challenge('test')
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         auth_server_b = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
             now_func=lambda: time.time() - 1000,
         )
         try:
@@ -246,12 +244,12 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_invalid_duration(self):
         auth_server = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name"
         )
         token = auth_server._make_token(
-            six.b("some_user"),
+            b"some_user",
             int(time.time()) + 3600,
         )
 
@@ -263,22 +261,22 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_too_old(self):
         auth_server_a = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name"
         )
         challenge = auth_server_a.create_challenge(
-            six.b("test")
+            'test'
         )
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         auth_server_b = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
             now_func=lambda: time.time() + 1000,
         )
 
@@ -291,13 +289,13 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_invalid_input(self):
         auth_server = server.AuthServer(
-            six.b("gurka"),
+            b"gurka",
             DummyKeyProvider(),
-            six.b("server.name"))
+            "server.name")
         data = (
-            six.b("2tYneWsOm88qu_Trzahw2r6ZLg37oepv03mykGS-HdcnWJLuUMDOmfVI"),
-            six.b("Wl5n3U6qt6Fub2E"),
-            six.b("random"),
+            b"2tYneWsOm88qu_Trzahw2r6ZLg37oepv03mykGS-HdcnWJLuUMDOmfVI",
+            b"Wl5n3U6qt6Fub2E",
+            b"random",
         )
         for t in data:
             try:
@@ -308,21 +306,21 @@ class RoundtripTest(unittest.TestCase):
 
     def test_validate_token_too_old(self):
         auth_server_a = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name")
+            "server.name"
         )
-        challenge = auth_server_a.create_challenge(six.b("test"))
+        challenge = auth_server_a.create_challenge('test')
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
             now_func=lambda: time.time() + 1000,
         )
         try:
@@ -334,21 +332,21 @@ class RoundtripTest(unittest.TestCase):
 
     def test_validate_token_too_new(self):
         auth_server_a = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
         )
-        challenge = auth_server_a.create_challenge(six.b("test"))
+        challenge = auth_server_a.create_challenge('test')
         response = create_response(
             challenge,
-            six.b("server.name"),
+            "server.name",
             ssh.SingleKeySigner(test_priv_key)
         )
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
             now_func=lambda: time.time() - 1000,
         )
         try:
@@ -359,21 +357,21 @@ class RoundtripTest(unittest.TestCase):
             pass
 
     def test_validate_token_wrong_secret(self):
-        token = six.b(
-            "dgAAAJgtmNoqST9RaxayI7UP5-GLviUDAAAAFHQAAABUJYr_VCWLPQAAAAR0ZXN0"
+        token = (
+            b"dgAAAJgtmNoqST9RaxayI7UP5-GLviUDAAAAFHQAAABUJYr_VCWLPQAAAAR0ZXN0"
         )
         auth_server = server.AuthServer(
-            six.b("server_secret"),
+            b"server_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
             now_func=lambda: 1411746561.058992,
         )
         auth_server.validate_token(token)
 
         auth_server = server.AuthServer(
-            six.b("wrong_secret"),
+            b"wrong_secret",
             DummyKeyProvider(),
-            six.b("server.name"),
+            "server.name",
             now_func=lambda: 1411746561.058992
         )
         try:
@@ -383,7 +381,7 @@ class RoundtripTest(unittest.TestCase):
             pass
 
     def test_b64_roundtrip(self):
-        l = [six.b("a"), six.b("ab"), six.b("abc"), six.b("abcd")]
+        l = [b"a", b"ab", b"abc", b"abcd"]
         for i in l:
             self.assertEquals(ssh.base64url_decode(ssh.base64url_encode(i)), i)
 
@@ -393,9 +391,9 @@ class RoundtripTest(unittest.TestCase):
 
 class DummyKeyProvider(key_provider.KeyProvider):
     def get_key(self, username):
-        if username == six.b('noa'):
+        if username == 'noa':
             return rsa.RSAPublicKey(s)
-        elif username == six.b('test'):
+        elif username == 'test':
             return rsa.RSAPublicKey(t_pubkey)
         else:
             raise exceptions.CrtAuthError("Unknown username: %s" % username)

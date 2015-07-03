@@ -38,7 +38,7 @@ class RSAPrivateKey(object):
         file"""
         private_key = private_key.strip()
         decoded = base64.b64decode(
-            six.b("").join(private_key.split(six.b("\n"))[1:-1])
+            "".join(private_key.split("\n")[1:-1])
         )
 
         items = _read_items(decoded)
@@ -108,8 +108,8 @@ class RSAPublicKey(object):
         # compare.
         decrypted = self.decrypt(signature)
         if len(decrypted) < self.mod_size:
-            decrypted = (six.b("\x00" *
-                               (self.mod_size - len(decrypted)))) + decrypted
+            decrypted = (b"\x00" *
+                         (self.mod_size - len(decrypted))) + decrypted
         padded_digest = (_make_padding(self.mod_size) +
                          hashlib.sha1(data).digest())
         return constant_time_compare(padded_digest, decrypted)
@@ -141,9 +141,9 @@ def _make_padding(mod_length):
     """
 
     # Constant for SHA-1 taken from RFC3447 page 42 note 1
-    PS = "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"
-    all_ff = "\xff" * (mod_length - len(PS) - 23)
-    return six.b("\x00\x01" + all_ff + "\x00" + PS)
+    PS = b"\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"
+    all_ff = b"\xff" * (mod_length - len(PS) - 23)
+    return b"\x00\x01" + all_ff + b"\x00" + PS
 
 
 def _read_items(data):

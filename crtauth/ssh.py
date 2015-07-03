@@ -62,8 +62,8 @@ def base64url_encode(data):
     encodes a url-safe base64 encoded string.
     """
 
-    s = base64.b64encode(data, six.b("-_"))
-    return s.rstrip(six.b("="))
+    s = base64.b64encode(data, b"-_")
+    return s.rstrip(b"=")
 
 
 def i2s(i):
