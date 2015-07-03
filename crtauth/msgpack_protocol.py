@@ -107,7 +107,17 @@ class MessageBase(object):
                 "Wrong magic, expected %d got %d" % (cls.__magic__, magic))
         kw = dict()
         for name, type_info in cls.__fields__:
-            kw[name] = unpacker.unpack()
+            val = unpacker.unpack()
+
+            # TODO thiderman: Fix this properly
+            # For some reason I cannot figure out properly, some string
+            # properties come out as bytes, which borks the tests and probably
+            # anything using the code. This workaround makes it roll, but it
+            # is obviously terrible.
+            # if six.PY3 and type(val) == bytes and type_info._data_type == str:
+            #     val = val.decode('utf-8')
+
+            kw[name] = val
         return cls(**kw), unpacker
 
     @classmethod

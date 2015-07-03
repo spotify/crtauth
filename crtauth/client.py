@@ -56,9 +56,10 @@ def create_response(challenge, server_name, signer_plug=None):
     else:
         raise exceptions.ProtocolError("invalid first byte of challenge")
 
-    if challenge.server_name != server_name:
+    check = server_name.encode('utf-8')
+    if challenge.server_name != check:
         s = ("Possible MITM attack. Challenge originates from '%s' "
-             "and not '%s'" % (challenge.server_name, server_name))
+             "and not '%s'" % (challenge.server_name, check))
         raise exceptions.InvalidInputException(s)
 
     if not signer_plug:

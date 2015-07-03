@@ -183,11 +183,11 @@ class AuthServer(object):
             raise exceptions.ProtocolError("invalid first byte of response")
 
         # verify the integrity of the challenge in the response
-        if self.server_name != challenge.server_name:
+        if self.server_name.encode('utf-8') != challenge.server_name:
             s = "Got challenge with the wrong server_name encoded"
             raise exceptions.InvalidInputException(s)
 
-        key = self.key_provider.get_key(challenge.username)
+        key = self.key_provider.get_key(challenge.username.decode('utf-8'))
 
         if challenge.valid_from > self.now_func():
             s = time.strftime("%Y-%m-%d %H:%M:%S UTC",

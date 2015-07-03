@@ -51,6 +51,9 @@ class RSAPrivateKey(object):
         self.padding = _make_padding(self.mod_size)
 
     def encrypt(self, data):
+        if six.PY3 and type(data) != bytes:
+            data = data.encode('utf-8')
+
         if len(data) > self.mod_size:
             raise exceptions.KeyError("Key size too small, more than %d bytes "
                                       "of data can not be encrypted" %
@@ -58,6 +61,9 @@ class RSAPrivateKey(object):
         return _int_to_str(pow(_str_to_int(data), self.private_exp, self.mod))
 
     def sign(self, data):
+        if six.PY3 and type(data) != bytes:
+            data = data.encode('utf-8')
+
         digest = hashlib.sha1(data).digest()
         return self.encrypt(self.padding + digest)
 
@@ -79,7 +85,7 @@ class RSAPublicKey(object):
         fields = read_fields(self.encoded)
         sigtype = next(fields)
 
-        if sigtype != six.b("ssh-rsa"):
+        if sigtype.decode('utf-8') != "ssh-rsa":
             raise exceptions.KeyError("Unknown key type %s. This code "
                                       "currently only supports ssh-rsa" %
                                       sigtype)
@@ -106,6 +112,9 @@ class RSAPublicKey(object):
         # for some reason, highest byte in padding is 0 that disappears in
         # the encryption roundtrip, so we need to add zeroes to be able to
         # compare.
+        if six.PY3 and type(data) != bytes:
+            data = data.encode('utf-8')
+
         decrypted = self.decrypt(signature)
         if len(decrypted) < self.mod_size:
             decrypted = (b"\x00" *

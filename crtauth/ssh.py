@@ -41,16 +41,17 @@ def base64url_decode(s):
     """
 
     if type(s) is six.text_type:
-        s = s.encode("US-ASCII")
+        s = s.encode("utf-8")
 
     if len(s) % 4 == 3:
-        s += six.b("=")
+        s += b"="
     elif len(s) % 4 == 2:
-        s += six.b("==")
+        s += b"=="
 
     # b64decode is real crap when checking for the validity of the input.
     try:
-        return base64.b64decode(s, "-_")
+        val = base64.b64decode(s, "-_")
+        return val
     except:
         _, e, tb = sys.exc_info()
         raise exceptions.InvalidInputException(

@@ -118,6 +118,12 @@ class SerializablePacket(object):
             if val is None:
                 raise exceptions.ProtocolError("Missing required argument "
                                                "'%s'" % key)
+
+            # All strings inside here are supposed to be compared and combined
+            # with bytelike objects. As such, we need to convert them.
+            if six.PY3 and isinstance(val, str):
+                val = val.encode('utf-8')
+
             setattr(self, key, val)
 
     def serialize(self):
@@ -153,7 +159,13 @@ class SerializablePacket(object):
         kw = dict()
 
         for name, field in cls.__fields__:
-            kw[name] = field.unpack(u)
+            val = field.unpack(u)
+
+            if six.PY3 and name in ('username', 'server_name') and \
+               type(val) == str:
+                val = val.encode('utf-8')
+
+            kw[name] = val
 
         return cls(**kw)
 
