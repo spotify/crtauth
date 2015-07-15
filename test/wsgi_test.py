@@ -17,7 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 import unittest
-from crtauth import wsgi
+# from crtauth import wsgi
+
+from crtauth.util import parse_request
 
 
 class WsgiTest(unittest.TestCase):
@@ -47,13 +49,12 @@ class WsgiTest(unittest.TestCase):
         _check_req_v0(b"AXHZYWJj")
 
         # a valid v1 'abc' username
-
-        username, version = wsgi.CrtauthMiddleware.parse_request(b"AXGjYWJj")
-        assert username == b"abc"
+        username, version = parse_request(b"AXGjYWJj")
+        assert username == "abc"
         assert version == 1
 
 
 def _check_req_v0(request):
-    u, v = wsgi.CrtauthMiddleware.parse_request(request)
+    u, v = parse_request(request)
     assert u == request
     assert v == 0

@@ -46,3 +46,47 @@ def constant_time_compare(x, y):
     for x, y in zip(x, y):
         result |= to_i(x) ^ to_i(y)
     return result == 0
+
+
+def parse_request(request):
+    """
+    This method contains logic to detect a v1 and beyond request and
+    differentiate it from a version 0 request, which is just an ascii
+    username. While all v1 requests are also valid usernames (the curse
+    and blessing of base64 encoding) it is pretty unlikely that a username
+    happens to also decode to a valid msgpack message with the correct
+    magic values.
+
+    @return a tuple containing username then version
+    """
+
+    binary = base64url_decode(request)
+    if len(binary) < 4:
+        return request, 0
+
+    if to_i(binary[0]) > 4 or to_i(binary[1]) != 113:  # The letter 'q'
+        # This code handles version values up to 4. Should give plenty
+        # of time to forget all about the unversioned version 0
+        return request, 0
+
+    b = to_i(binary[2])
+    if (b < 0xa1 or b > 0xbf) and b != 0xd9:
+        # third byte does not indicate a string longer than 0 and shorter
+        # than 256 octets long (According to UTF_8 rfc3629, a unicode
+        # char can encode to at most 4 UTF-8 bytes, and username values
+        # in crtauth is limited to 64 characters, thus the max number of
+        # bytes a username can be is 64 * 4 == 256
+        return request, 0
+
+    if b == 0xd9:
+        username_start = 4
+        username_len = to_i(binary[3])
+    else:
+        username_start = 3
+        username_len = to_i(binary[2]) & 0x1f
+
+    if len(binary) - username_start < username_len:
+        # decoded string is too short
+        return request, 0
+
+    return binary[username_start:username_start + username_len].decode('utf-8'), 1
