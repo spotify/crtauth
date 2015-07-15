@@ -29,6 +29,8 @@ from crtauth import exceptions
 from crtauth import msgpack_protocol
 from crtauth.client import create_response
 from crtauth.server import create_response as server_create_response
+from crtauth.util import base64url_encode
+from crtauth.util import base64url_decode
 
 inner_s = (
     "AAAAB3NzaC1yc2EAAAABIwAAAQEArt7xdaxlbzzGlgLhqpLuE5x9d+so0M"
@@ -92,7 +94,7 @@ class RoundtripTest(unittest.TestCase):
         )
 
     def test_read_binary_key(self):
-        data = ssh.base64url_decode(inner_s)
+        data = base64url_decode(inner_s)
         key = rsa.RSAPublicKey(data)
         self.assertEqual(key.fingerprint(), b"\xfb\xa1\xeao\xd3y")
         self.assertEqual(key.decoded, inner_s.encode('utf-8'))
@@ -105,7 +107,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server = server.AuthServer("gurka", DummyKeyProvider(),
                                         "server.name")
         s = auth_server.create_challenge('noa')
-        cb = ssh.base64url_decode(s)
+        cb = base64url_decode(s)
 
         verifiable_payload = protocol.VerifiablePayload.deserialize(cb)
 
@@ -117,7 +119,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server = server.AuthServer("secret", DummyKeyProvider(),
                                         "server.name")
         challenge = auth_server.create_challenge('noa', 1)
-        cb = ssh.base64url_decode(challenge)
+        cb = base64url_decode(challenge)
 
         decoded_challenge = msgpack_protocol.Challenge.deserialize(cb)
 
@@ -138,7 +140,7 @@ class RoundtripTest(unittest.TestCase):
                                         "server.name",
                                         lowest_supported_version=1)
         challenge = auth_server.create_challenge('noa', 1)
-        cb = ssh.base64url_decode(challenge)
+        cb = base64url_decode(challenge)
 
         decoded_challenge = msgpack_protocol.Challenge.deserialize(cb)
 
@@ -383,7 +385,7 @@ class RoundtripTest(unittest.TestCase):
     def test_b64_roundtrip(self):
         l = [b"a", b"ab", b"abc", b"abcd"]
         for i in l:
-            self.assertEquals(ssh.base64url_decode(ssh.base64url_encode(i)), i)
+            self.assertEquals(base64url_decode(base64url_encode(i)), i)
 
     def test_compatibility_create_response(self):
         self.assertEqual(server_create_response, create_response)

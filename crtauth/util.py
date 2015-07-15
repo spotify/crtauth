@@ -17,6 +17,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import sys
+import six
+import base64
+
+from crtauth import exceptions
+
 
 def to_i(int_or_single_char_string):
     if isinstance(int_or_single_char_string, int):
@@ -90,3 +96,35 @@ def parse_request(request):
         return request, 0
 
     return binary[username_start:username_start + username_len].decode('utf-8'), 1
+
+
+def base64url_decode(s):
+    """
+    Decodes a url-safe base64 encoded string.
+    """
+
+    if type(s) is six.text_type:
+        s = s.encode("utf-8")
+
+    if len(s) % 4 == 3:
+        s += b"="
+    elif len(s) % 4 == 2:
+        s += b"=="
+
+    # b64decode is real crap when checking for the validity of the input.
+    try:
+        val = base64.b64decode(s, "-_")
+        return val
+    except:
+        _, e, tb = sys.exc_info()
+        raise exceptions.InvalidInputException(
+            "Invalid base64 sequence: %s" % e)
+
+
+def base64url_encode(data):
+    """
+    encodes a url-safe base64 encoded string.
+    """
+
+    s = base64.b64encode(data, b"-_")
+    return s.rstrip(b"=").decode('utf-8')

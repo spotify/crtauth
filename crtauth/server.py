@@ -25,11 +25,13 @@ import logging
 import re
 import time
 
-from crtauth import ssh
 from crtauth import exceptions
 from crtauth import protocol
 from crtauth import msgpack_protocol
+
 from crtauth.util import to_i
+from crtauth.util import base64url_encode
+from crtauth.util import base64url_decode
 
 # Previously, create_response lived in this module. Importing to preserve
 # backward compatibility for now. New users should use the version in
@@ -133,7 +135,7 @@ class AuthServer(object):
                 digest=self._hmac(b),
                 payload=b
             )
-            return ssh.base64url_encode(payload.serialize())
+            return base64url_encode(payload.serialize())
         else:
             c = msgpack_protocol.Challenge(
                 fingerprint=fingerprint,
@@ -142,14 +144,14 @@ class AuthServer(object):
                 valid_from=int(self.now_func() - CLOCK_FUDGE),
                 valid_to=int(self.now_func() + RESP_TIMEOUT),
                 username=username)
-            return ssh.base64url_encode(c.serialize(self.secret))
+            return base64url_encode(c.serialize(self.secret))
 
     def create_token(self, response):
         """
         This method verifies that the response given from the client
         is valid and if so returns a token used for authentication.
         """
-        s = ssh.base64url_decode(response)
+        s = base64url_decode(response)
         start = to_i(s[0])
 
         if start == 114:  # The letter 'r'
@@ -214,7 +216,7 @@ class AuthServer(object):
         return self._make_token(challenge.username, expire_time)
 
     def validate_token(self, token):
-        buf = ssh.base64url_decode(token)
+        buf = base64url_decode(token)
         hmac_token = protocol.VerifiablePayload.deserialize(buf)
 
         t = protocol.Token.deserialize(hmac_token.payload)
@@ -251,4 +253,4 @@ class AuthServer(object):
 
         payload = protocol.VerifiablePayload(digest=self._hmac(b), payload=b)
 
-        return ssh.base64url_encode(payload.serialize())
+        return base64url_encode(payload.serialize())

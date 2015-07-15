@@ -17,12 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import base64
-import sys
 import os
 import socket
 import struct
-import six
 
 from crtauth import exceptions
 from crtauth import rsa
@@ -33,38 +30,6 @@ SSH2_AGENTC_REQUEST_IDENTITIES = 11
 SSH2_AGENT_IDENTITIES_ANSWER = 12
 SSH2_AGENTC_SIGN_REQUEST = 13
 SSH2_AGENT_SIGN_RESPONSE = 14
-
-
-def base64url_decode(s):
-    """
-    Decodes a url-safe base64 encoded string.
-    """
-
-    if type(s) is six.text_type:
-        s = s.encode("utf-8")
-
-    if len(s) % 4 == 3:
-        s += b"="
-    elif len(s) % 4 == 2:
-        s += b"=="
-
-    # b64decode is real crap when checking for the validity of the input.
-    try:
-        val = base64.b64decode(s, "-_")
-        return val
-    except:
-        _, e, tb = sys.exc_info()
-        raise exceptions.InvalidInputException(
-            "Invalid base64 sequence: %s" % e)
-
-
-def base64url_encode(data):
-    """
-    encodes a url-safe base64 encoded string.
-    """
-
-    s = base64.b64encode(data, b"-_")
-    return s.rstrip(b"=").decode('utf-8')
 
 
 def i2s(i):

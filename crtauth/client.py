@@ -20,6 +20,8 @@ import io
 import msgpack
 from crtauth import ssh, protocol, msgpack_protocol, exceptions
 from crtauth.util import to_i
+from crtauth.util import base64url_encode
+from crtauth.util import base64url_decode
 
 
 def create_request(username):
@@ -32,14 +34,14 @@ def create_request(username):
     msgpack.pack(1, buf)
     msgpack.pack(ord('q'), buf)
     msgpack.pack(username, buf)
-    return ssh.base64url_encode(buf.getvalue())
+    return base64url_encode(buf.getvalue())
 
 
 def create_response(challenge, server_name, signer_plug=None):
     """Called by a client with the challenge provided by the server
     to generate a response using the local ssh-agent"""
 
-    b = ssh.base64url_decode(challenge)
+    b = base64url_decode(challenge)
     start = to_i(b[0])
 
     if start == 118:  # the character 'v'
@@ -75,4 +77,4 @@ def create_response(challenge, server_name, signer_plug=None):
         response = protocol.Response(
             signature=signature, hmac_challenge=hmac_challenge)
 
-    return ssh.base64url_encode(response.serialize())
+    return base64url_encode(response.serialize())
