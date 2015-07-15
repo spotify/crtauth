@@ -21,16 +21,28 @@ import sys
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
-install_requires = (
+install_requires = [
     'msgpack-python>=0.4.0,<1.0.0a0',
     'six>=1.9.0,<2.0.0a0',
-)
+]
 
-tests_require = (
+tests_require = [
+    'mock',
     'pytest-cov',
     'pytest-cache',
     'tox',
-)
+]
+
+# The asyncio parts only works in Python 3, so we only add them if they
+# actually make sense.
+if sys.version_info > (3,):
+    install_requires += [
+        'aiohttp>=0.16.5,<1.0.0a0',
+    ]
+    tests_require += [
+        'pytest-asyncio',
+        'pytest-quickcheck',
+    ]
 
 
 class PyTest(TestCommand):
