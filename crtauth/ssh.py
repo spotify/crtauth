@@ -64,7 +64,7 @@ def base64url_encode(data):
     """
 
     s = base64.b64encode(data, b"-_")
-    return s.rstrip(b"=")
+    return s.rstrip(b"=").decode('utf-8')
 
 
 def i2s(i):

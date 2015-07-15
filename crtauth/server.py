@@ -79,7 +79,7 @@ class AuthServer(object):
         """
 
         self.token_lifetime = token_lifetime
-        self.secret = secret
+        self.secret = secret.encode('utf-8')
         self.key_provider = key_provider
 
         self.server_name = server_name
@@ -110,7 +110,7 @@ class AuthServer(object):
             fingerprint = key.fingerprint()
         except exceptions.NoSuchUserException:
             log.info("No public key found for '%s', faking it." % username)
-            fingerprint = self._hmac(username)[:6]
+            fingerprint = self._hmac(username.encode('utf-8'))[:6]
 
         if version < 1:
             if self.lowest_supported_version > version:
@@ -237,7 +237,7 @@ class AuthServer(object):
                                                    "failed, not matching our "
                                                    "secret")
 
-        return t.username
+        return t.username.decode('utf-8')
 
     def _hmac(self, data):
         return hmac.new(self.secret, data, hashlib.sha1).digest()

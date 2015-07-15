@@ -102,7 +102,7 @@ class RoundtripTest(unittest.TestCase):
         )
 
     def test_create_challenge(self):
-        auth_server = server.AuthServer(b"gurka", DummyKeyProvider(),
+        auth_server = server.AuthServer("gurka", DummyKeyProvider(),
                                         "server.name")
         s = auth_server.create_challenge('noa')
         cb = ssh.base64url_decode(s)
@@ -114,7 +114,7 @@ class RoundtripTest(unittest.TestCase):
         self.assertEquals(b"\xfb\xa1\xeao\xd3y", challenge.fingerprint)
 
     def test_create_challenge_v1(self):
-        auth_server = server.AuthServer(b"secret", DummyKeyProvider(),
+        auth_server = server.AuthServer("secret", DummyKeyProvider(),
                                         "server.name")
         challenge = auth_server.create_challenge('noa', 1)
         cb = ssh.base64url_decode(challenge)
@@ -127,14 +127,14 @@ class RoundtripTest(unittest.TestCase):
         )
 
     def test_create_challenge_no_legacy_support(self):
-        auth_server = server.AuthServer(b"secret", DummyKeyProvider(),
+        auth_server = server.AuthServer("secret", DummyKeyProvider(),
                                         "server.name",
                                         lowest_supported_version=1)
         self.assertRaises(exceptions.ProtocolVersionError,
                           auth_server.create_challenge, 'noa')
 
     def test_create_challenge_v1_another(self):
-        auth_server = server.AuthServer(b"secret", DummyKeyProvider(),
+        auth_server = server.AuthServer("secret", DummyKeyProvider(),
                                         "server.name",
                                         lowest_supported_version=1)
         challenge = auth_server.create_challenge('noa', 1)
@@ -149,7 +149,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip(self):
         auth_server = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
         )
@@ -164,7 +164,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_v1(self):
         auth_server = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name"
         )
@@ -179,7 +179,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_mitm1(self):
         auth_server = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
         )
@@ -196,7 +196,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_authentication_roundtrip_mitm2(self):
         auth_server_a = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
         )
@@ -207,7 +207,7 @@ class RoundtripTest(unittest.TestCase):
             ssh.SingleKeySigner(test_priv_key)
         )
         auth_server_b = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "another.server",
         )
@@ -219,7 +219,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_too_new(self):
         auth_server_a = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name"
         )
@@ -230,7 +230,7 @@ class RoundtripTest(unittest.TestCase):
             ssh.SingleKeySigner(test_priv_key)
         )
         auth_server_b = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
             now_func=lambda: time.time() - 1000,
@@ -244,7 +244,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_invalid_duration(self):
         auth_server = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name"
         )
@@ -261,7 +261,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_too_old(self):
         auth_server_a = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name"
         )
@@ -274,7 +274,7 @@ class RoundtripTest(unittest.TestCase):
             ssh.SingleKeySigner(test_priv_key)
         )
         auth_server_b = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
             now_func=lambda: time.time() + 1000,
@@ -289,7 +289,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_create_token_invalid_input(self):
         auth_server = server.AuthServer(
-            b"gurka",
+            "gurka",
             DummyKeyProvider(),
             "server.name")
         data = (
@@ -306,7 +306,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_validate_token_too_old(self):
         auth_server_a = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name"
         )
@@ -318,7 +318,7 @@ class RoundtripTest(unittest.TestCase):
         )
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
             now_func=lambda: time.time() + 1000,
@@ -332,7 +332,7 @@ class RoundtripTest(unittest.TestCase):
 
     def test_validate_token_too_new(self):
         auth_server_a = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
         )
@@ -344,7 +344,7 @@ class RoundtripTest(unittest.TestCase):
         )
         token = auth_server_a.create_token(response)
         auth_server_b = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
             now_func=lambda: time.time() - 1000,
@@ -361,7 +361,7 @@ class RoundtripTest(unittest.TestCase):
             b"dgAAAJgtmNoqST9RaxayI7UP5-GLviUDAAAAFHQAAABUJYr_VCWLPQAAAAR0ZXN0"
         )
         auth_server = server.AuthServer(
-            b"server_secret",
+            "server_secret",
             DummyKeyProvider(),
             "server.name",
             now_func=lambda: 1411746561.058992,
@@ -369,7 +369,7 @@ class RoundtripTest(unittest.TestCase):
         auth_server.validate_token(token)
 
         auth_server = server.AuthServer(
-            b"wrong_secret",
+            "wrong_secret",
             DummyKeyProvider(),
             "server.name",
             now_func=lambda: 1411746561.058992
