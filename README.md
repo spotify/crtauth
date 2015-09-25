@@ -32,9 +32,9 @@ a minimal example on how this API is used. If crtauth is to be used in a
 non-WSGI environment, there is a lower level API available in the
 [server](crtauth/server.py) module.
 
-For the client part the available functionality is somewhat lower level, using
-the [client](crtauth/client.py) module as can be seen in the
-[hello_world_client](example/hello_world_client) example.
+For clients an [authentication plugin for Python Requests](https://github.com/spotify/requests-crtauth)
+is available. An example use of the [client](crtauth/client.py) module can be
+seen in the [hello_world_client](example/hello_world_client) example.
 
 
 ## Technical details
