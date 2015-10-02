@@ -198,6 +198,10 @@ class CrtauthMiddleware(object):
 
         @return a tuple containing username then version
         """
+        if len(request) % 4 == 1:
+            # strings of length 1, 5, 9.. has invalid base64 padding, so they
+            # must be ascii usernames.
+            return request, 0
         binary = ssh.base64url_decode(request)
         if len(binary) < 4:
             return request, 0
