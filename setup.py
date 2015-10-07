@@ -21,7 +21,7 @@ from distutils.core import setup
 
 setup(
     name='crtauth',
-    version='0.99.3',
+    version='0.99.4',
     description="A public key backed client/server authentication system",
     author='Noa Resare',
     author_email='noa@spotify.com',
