@@ -25,6 +25,9 @@ class WsgiTest(unittest.TestCase):
         # trigger short request
         _check_req_v0("noa")
 
+        # trigger v0 request where len(s) % 4 == 1
+        _check_req_v0("stack")
+
         # trigger first byte is > 0x03
         _check_req_v0("BXGjYWJj")
 
