@@ -1,7 +1,7 @@
 # crtauth - a public key backed client/server authentication system
 
 The latest version of this software can be fetched from
-[github](https://github.com/spotify/crtauth)
+[GitHub](https://github.com/spotify/crtauth).
 
 crtauth is a system for authenticating a user to a centralized server. The
 initial use case is to create a convenient authentication for command line
@@ -46,7 +46,7 @@ specifics of the protocol and it's messages, please see
 Command line tools that connect to a central server to perform some action or
 fetch some information can be a very useful thing. crtauth is currently specified
 to work with HTTP as transport, but it is entirely possible to re-use 
-that exposes information about servers using an http based API.
+that exposes information about servers using an HTTP-based API.
 
 The basic operation of the protocol follows the following pattern
 
@@ -67,19 +67,19 @@ reads public keys from a filesystem directory using a filename pattern derived
 from the username of the connecting user.
 
 Once there is an AuthServer instance, it can generate a challenge string for
-a specific user using the create_challenge() method.
+a specific user using the `create_challenge()` method.
 
 The client part of the mechanism is also contained in the crtauth.server module,
-in the create_response() function. It takes a challenge string provided by the
+in the `create_response()` function. It takes a challenge string provided by the
 server and returns a response string suitable for sending back to the server.
 
 The server in turn validates the response from the client and if it checks out
 it returns an access token that can be used by the client to make authenticated
-requests. This validation is done in the create_token() method of the AuthServer
+requests. This validation is done in the `create_token()` method of the AuthServer
 class.
 
 For subsequent calls to protected services, the provided access token can be
-verified using the validate_token() method of the AuthServer instance.
+verified using the `validate_token()` method of the AuthServer instance.
 
 ## SSH keys from LDAP
 
