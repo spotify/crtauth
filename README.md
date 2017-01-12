@@ -95,4 +95,4 @@ Software License, version 2. The original code is written by Noa Resare with
 contributions from John-John Tedro, Erwan Lemmonier, Martin Parm and Gunnar
 Kreitz
 
-All code is Copyright (c) 2011-2014 Spotify AB
+All code is Copyright (c) 2011-2017 Spotify AB
